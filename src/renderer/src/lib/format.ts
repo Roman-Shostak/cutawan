@@ -15,12 +15,12 @@ export function formatTimecode(sec: number): string {
 }
 
 export function formatBytes(bytes: number): string {
-  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} ГБ`
   if (bytes >= 1024 ** 2) {
     const mb = bytes / 1024 ** 2
-    return `${mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)} MB`
+    return `${mb >= 10 ? mb.toFixed(0) : mb.toFixed(1)} МБ`
   }
-  return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024).toFixed(0)} КБ`
 }
 
 export function scoreColor(score: number): string {
@@ -37,4 +37,18 @@ export function scoreLabel(score: number): string {
   if (score >= 55) return 'Good'
   if (score >= 40) return 'Fair'
   return 'Weak'
+}
+
+/**
+ * Ukrainian plural form for a count: `one` for 1, 21, 31…; `few` for 2–4,
+ * 22–24…; `many` for 0, 5–20, 25–30… (e.g. 1 кліп, 3 кліпи, 5 кліпів).
+ */
+export function pluralUk(count: number, one: string, few: string, many: string): string {
+  const n = Math.abs(Math.trunc(count))
+  const lastTwo = n % 100
+  const last = n % 10
+  if (lastTwo >= 11 && lastTwo <= 14) return many
+  if (last === 1) return one
+  if (last >= 2 && last <= 4) return few
+  return many
 }

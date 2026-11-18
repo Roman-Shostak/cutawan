@@ -160,7 +160,7 @@ describe('chatJSON', () => {
     vi.stubGlobal('fetch', fetchMock)
     await expect(
       chatJSON('sk-bad', 'gpt', [{ role: 'user', content: 'hi' }], 'test', schema)
-    ).rejects.toThrow(/rejected the API key/)
+    ).rejects.toThrow(/відхилив API-ключ/)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 

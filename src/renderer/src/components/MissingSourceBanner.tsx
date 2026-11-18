@@ -19,9 +19,9 @@ export default function MissingSourceBanner(): React.JSX.Element | null {
     >
       <FileWarning size={18} className="shrink-0" />
       <div className="min-w-0 flex-1">
-        <span className="font-semibold">Source video not found. </span>
+        <span className="font-semibold">Вихідне відео не знайдено. </span>
         <span className="text-amber-300/80">
-          {project.video.path} — previews and exports need it. Your transcript and clips are safe.
+          {project.video.path} — воно потрібне для превʼю й експорту. Ваша розшифровка й кліпи в безпеці.
         </span>
       </div>
       <button
@@ -29,7 +29,7 @@ export default function MissingSourceBanner(): React.JSX.Element | null {
         className="flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/30"
       >
         <FileVideo size={13} />
-        Locate video…
+        Знайти відео…
       </button>
     </div>
   )

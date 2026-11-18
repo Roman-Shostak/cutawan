@@ -47,7 +47,7 @@ export async function captionWholeVideo(
   // offline is allowed.
   const apiKey = getAnalysisCredential()
   if (!apiKey && !project.transcript && !usesLocalTranscription()) {
-    throw new Error('No transcription connection configured. Add an API key or set up local Whisper in Settings.')
+    throw new Error('Розпізнавання мови не налаштовано. Додайте API-ключ або налаштуйте локальний Whisper у Налаштуваннях.')
   }
   const settings = getModelPreferences()
   const workDir = join(tmpdir(), 'cutawan', `caption-${project.id}`)
@@ -92,7 +92,7 @@ export async function captionWholeVideo(
       contentType = tracked.contentType
     }
 
-    onProgress({ stage: 'thumbnails', progress: 0.94, message: 'Finishing up…' })
+    onProgress({ stage: 'thumbnails', progress: 0.94, message: 'Завершую…' })
     const existing = findWholeVideoClip(project)
     // Reuse the clip id across re-runs so export progress, the open editor and
     // anything else keyed by clip id keep pointing at the same edit.
@@ -148,7 +148,7 @@ export async function captionWholeVideo(
       else p.clips[idx] = clip
       p.mode = 'whole-video'
     })
-    onProgress({ stage: 'done', progress: 1, message: 'Done' })
+    onProgress({ stage: 'done', progress: 1, message: 'Готово' })
     return persisted
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined)

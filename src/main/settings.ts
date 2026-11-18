@@ -188,7 +188,7 @@ function maskKey(key: string): string {
 
 /** What to ask for when the selected provider has no credential. */
 export function missingCredentialName(): string {
-  return load().subscription.provider === 'openrouter' ? 'OpenRouter key' : 'OpenAI API key'
+  return load().subscription.provider === 'openrouter' ? 'ключ OpenRouter' : 'API-ключ'
 }
 
 /** Credential for analysis (and hosted transcription) on the selected provider. */
@@ -302,7 +302,7 @@ export async function updateSettings(update: SettingsUpdate): Promise<AppSetting
   }
   if (update.openRouterTranscriptionModel !== undefined) {
     if (!isSupportedTranscriptionModel(update.openRouterTranscriptionModel.trim())) {
-      throw new Error(`${update.openRouterTranscriptionModel} can't be used for transcription: Cutawan needs word timestamps, which only OpenRouter's Whisper models return.`)
+      throw new Error(`${update.openRouterTranscriptionModel} не підходить для розпізнавання: Cutawan потрібні таймкоди слів, які на OpenRouter повертають лише моделі Whisper.`)
     }
     s.openRouterTranscriptionModel = update.openRouterTranscriptionModel.trim()
   }

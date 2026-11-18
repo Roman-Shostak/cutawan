@@ -6,7 +6,7 @@ import { usePreviewBus } from '../lib/previewBus'
 import { useStore } from '../store'
 
 const preferences = [
-  ['auto', 'Automatic'], ['content-first', 'Content first'], ['stacked', 'Stacked'], ['content-only', 'Content only']
+  ['auto', 'Автоматично'], ['content-first', 'Спершу контент'], ['stacked', 'Одне над одним'], ['content-only', 'Лише контент']
 ] as const
 const startingRegions = presenterComposition({ x: .05, y: .35, width: .75, height: .6 },
   { x: .82, y: .02, width: .16, height: .28 })!
@@ -27,36 +27,36 @@ export default function CompositionControls({ clip }: { clip: Clip }): React.JSX
     const layout = clip.visualLayout
     const existing = validLayoutShots(layout, clip.edit.start, clip.edit.end)
     const replacement = { start: shot?.start ?? clip.edit.start, end: shot?.end ?? clip.edit.end, mode: 'fit' as const,
-      composition, review: { status: 'needs-review' as const, reason: 'Source regions adjusted manually; review this shot before exporting.' } }
+      composition, review: { status: 'needs-review' as const, reason: 'Області джерела задано вручну; перегляньте цей план перед експортом.' } }
     void update({ ...clip, edit: { ...clip.edit, layoutChosen: true, framing: 'auto', reframeMode: 'crop', autoZoom: false },
       visualLayout: { start: existing ? layout!.start : clip.edit.start, end: existing ? layout!.end : clip.edit.end,
-        preserveContext: true, allowZoom: false, reason: 'Manually selected source regions.', revision: (layout?.revision ?? 0) + 1,
+        preserveContext: true, allowZoom: false, reason: 'Області джерела вибрано вручну.', revision: (layout?.revision ?? 0) + 1,
         shots: existing && shot ? layout!.shots!.map(s => s === shot ? replacement : s)
           : [{ ...replacement, start: clip.edit.start, end: clip.edit.end }] } })
     setAdding(false)
   }
   return <div className="mt-3 space-y-2">
-    {issue && <p className="text-xs text-amber-300">Review layout: {issue}</p>}
+    {issue && <p className="text-xs text-amber-300">Перевірка компонування: {issue}</p>}
     {issue && !clip.edit.layoutChosen && !clip.visualLayout?.revision && <div className="space-y-1">
       <button type="button" disabled={busy} onClick={() => void retry(clip.id, true)}
         className="text-xs text-zinc-300 underline underline-offset-4 disabled:opacity-40">
-        {busy ? 'Retrying layout…' : 'Retry automatic layout'}
+        {busy ? 'Повторюю компонування…' : 'Повторити автоматичне компонування'}
       </button>
-      <p className="text-[11px] text-zinc-500">Reviews this clip using your configured AI provider. Keeps the transcript and clip selection.</p>
+      <p className="text-[11px] text-zinc-500">Перевіряє кліп через ваш ШІ-провайдер. Розшифровка й вибір кліпу зберігаються.</p>
       {error && <p role="alert" className="text-xs text-amber-300">{error}</p>}
     </div>}
     {hasSplits && clip.edit.aspect === '9:16' && <div className="space-y-1">
       <button type="button" aria-pressed={splitsOn}
         onClick={() => void update({ ...clip, edit: { ...clip.edit, speakerSplit: !splitsOn } })}
         className={`w-full rounded-lg border px-2 py-2 text-xs transition ${splitsOn ? 'border-white/30 bg-white/[0.07] text-zinc-100' : 'border-surface-600 text-zinc-400 hover:bg-surface-800'}`}>
-        Split screen during conversations: {splitsOn ? 'on' : 'off'}
+        Розділений екран під час розмов: {splitsOn ? 'on' : 'off'}
       </button>
       <p className="text-[11px] leading-relaxed text-zinc-500">
-        Stacks both people while they trade quick turns in the same shot. Off follows whoever is speaking.
+        Показує обох людей одне над одним, коли вони швидко обмінюються репліками в одному кадрі. Якщо вимкнено — камера стежить за тим, хто говорить.
       </p>
     </div>}
     {hasComposition && <>
-      <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Presenter and content layout">
+      <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Компонування ведучого й контенту">
         {preferences.map(([value, label]) => <button key={value} type="button"
           aria-pressed={active && (clip.edit.compositionPreference ?? 'auto') === value}
           disabled={clip.edit.aspect !== '9:16'}
@@ -66,19 +66,19 @@ export default function CompositionControls({ clip }: { clip: Clip }): React.JSX
         </button>)}
       </div>
       <p className="text-[11px] leading-relaxed text-zinc-500">
-        {clip.edit.aspect !== '9:16' ? 'Presenter layouts are available in 9:16. Other formats keep the full scene.' :
-          'Separate crops from the original video. Automatic layouts are checked on sampled frames; review motion before exporting.'}
+        {clip.edit.aspect !== '9:16' ? 'Компонування з ведучим доступне у 9:16. Інші формати зберігають усю сцену.' :
+          'Окремі кропи з оригінального відео. Автоматичне компонування перевіряється на вибіркових кадрах; перегляньте рух перед експортом.'}
       </p>
-      {compositionHidesTitle(clip) && clip.edit.showTitle && <p className="text-[11px] text-zinc-500">The hook title is hidden to keep the presenter clear.</p>}
+      {compositionHidesTitle(clip) && clip.edit.showTitle && <p className="text-[11px] text-zinc-500">Заголовок-гачок приховано, щоб не закривати ведучого.</p>}
       {active && isPresenterComposition(shot?.composition) && <RegionForm key={`${shot!.start}:${JSON.stringify(shot!.composition)}`}
         composition={shot!.composition!} onSave={saveRegions} />}
     </>}
     {clip.edit.aspect === '9:16' && !shot?.composition && <>
       <button type="button" className="text-xs text-zinc-400 underline underline-offset-4" onClick={() => setAdding(!adding)}>
-        {adding ? 'Cancel source regions' : 'Set presenter and content regions'}
+        {adding ? 'Скасувати області джерела' : 'Задати області ведучого й контенту'}
       </button>
       {adding && <>
-        <p className="text-[11px] text-zinc-500">For a separate presenter inset and screen content. Adjust these starting regions to match your source; no AI analysis is needed.</p>
+        <p className="text-[11px] text-zinc-500">Для окремої вставки ведучого (вебки) і контенту екрана (гри). Підлаштуйте ці області під своє відео; аналіз ШІ не потрібен.</p>
         <RegionForm composition={startingRegions} onSave={saveRegions} open />
       </>}
     </>}
@@ -87,7 +87,7 @@ export default function CompositionControls({ clip }: { clip: Clip }): React.JSX
 
 function RegionForm({ composition, onSave, open }: { composition: Composition; onSave: (composition: Composition) => void; open?: boolean }): React.JSX.Element {
   const [error, setError] = useState('')
-  return <details open={open} className="text-xs text-zinc-400"><summary className="cursor-pointer py-1">Adjust source regions for this shot</summary>
+  return <details open={open} className="text-xs text-zinc-400"><summary className="cursor-pointer py-1">Налаштувати області джерела для цього плану</summary>
     <form className="mt-2 space-y-3" onSubmit={event => {
       event.preventDefault()
       const values = new FormData(event.currentTarget)
@@ -101,7 +101,7 @@ function RegionForm({ composition, onSave, open }: { composition: Composition; o
       onSave(updated)
     }}>
       {composition.layers.map(layer => <fieldset key={layer.role}>
-        <legend className="mb-1 capitalize">{layer.role} (% of source)</legend>
+        <legend className="mb-1 capitalize">{layer.role} (% від джерела)</legend>
         <div className="grid grid-cols-4 gap-1">
           {(['x', 'y', 'width', 'height'] as const).map(field => <label key={field} className="text-[10px]">
             {field}<input name={`${layer.role}-${field}`} type="number" required min={0} max={100} step={.1}
@@ -111,7 +111,7 @@ function RegionForm({ composition, onSave, open }: { composition: Composition; o
         </div>
       </fieldset>)}
       {error && <p role="alert" className="text-amber-300">{error}</p>}
-      <button type="submit" className="rounded border border-surface-600 px-3 py-1.5 text-zinc-200">Apply regions</button>
+      <button type="submit" className="rounded border border-surface-600 px-3 py-1.5 text-zinc-200">Застосувати області</button>
     </form>
   </details>
 }

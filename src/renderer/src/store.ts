@@ -259,7 +259,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   importVideoFromUrl: async (url) => {
-    set({ importProgress: { progress: -1, message: 'Starting…' }, pipelineError: null })
+    set({ importProgress: { progress: -1, message: 'Починаю…' }, pipelineError: null })
     try {
       const project = await window.cutawan.createProjectFromUrl(url.trim())
       set({ project, screen: 'home', importProgress: null })
@@ -330,7 +330,7 @@ export const useStore = create<AppState>((set, get) => ({
       screen: 'processing',
       pipelineError: null,
       pipelineMode: 'clips',
-      pipelineProgress: { stage: 'audio', progress: 0, message: 'Starting…' }
+      pipelineProgress: { stage: 'audio', progress: 0, message: 'Починаю…' }
     })
     try {
       const updated = await window.cutawan.analyzeProject(project.id, options)
@@ -358,7 +358,7 @@ export const useStore = create<AppState>((set, get) => ({
       pipelineError: null,
       pipelineMode: 'whole-video',
       pipelineFollowSpeaker: options.followSpeaker,
-      pipelineProgress: { stage: 'audio', progress: 0, message: 'Starting…' }
+      pipelineProgress: { stage: 'audio', progress: 0, message: 'Починаю…' }
     })
     try {
       const updated = await window.cutawan.captionWholeVideo(project.id, options)
@@ -630,7 +630,7 @@ export const useStore = create<AppState>((set, get) => ({
         currentVersion: get().settings?.appVersion ?? '', latestVersion: null, releaseUrl: null,
         updateAvailable: false, autoUpdateSupported: false, sourceUpdateSupported: false,
         ...previous, checkedAt: Date.now(),
-        error: `Could not check for updates: ${err instanceof Error ? cleanIpcError(err.message) : String(err)}`
+        error: `Не вдалося перевірити оновлення: ${err instanceof Error ? cleanIpcError(err.message) : String(err)}`
       } })
       return false
     } finally { set({ checkingForUpdates: false }) }
@@ -670,7 +670,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   updateFromSource: async () => {
     if (get().sourceUpdate.status === 'running') return
-    set({ sourceUpdate: { status: 'running', message: 'Starting…' } })
+    set({ sourceUpdate: { status: 'running', message: 'Починаю…' } })
     const unsubscribe = window.cutawan.onSourceUpdateProgress((p) => {
       if (get().sourceUpdate.status === 'running') {
         set({ sourceUpdate: { status: 'running', message: p.message } })

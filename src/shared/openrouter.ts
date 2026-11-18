@@ -45,10 +45,10 @@ export interface SuggestedModel {
  * catalogue are hidden, so a retired model never gets suggested.
  */
 export const SUGGESTED_OPENROUTER_MODELS: SuggestedModel[] = [
-  { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', note: 'Recommended · fast, low cost, tuned for Cutawan' },
-  { id: 'google/gemini-3.8-flash', name: 'Google: Gemini 3.8 Flash', note: 'Low cost · long context for long videos' },
-  { id: 'anthropic/claude-sonnet-5', name: 'Anthropic: Claude Sonnet 5', note: 'Careful clip picking and titles' },
-  { id: 'openai/gpt-5.5', name: 'OpenAI: GPT-5.5', note: 'Highest quality · slower and pricier' }
+  { id: 'openai/gpt-5.4-mini', name: 'OpenAI: GPT-5.4 Mini', note: 'Рекомендовано · швидко, дешево, налаштовано під Cutawan' },
+  { id: 'google/gemini-3.8-flash', name: 'Google: Gemini 3.8 Flash', note: 'Дешево · довгий контекст для довгих відео' },
+  { id: 'anthropic/claude-sonnet-5', name: 'Anthropic: Claude Sonnet 5', note: 'Ретельний добір кліпів і назв' },
+  { id: 'openai/gpt-5.5', name: 'OpenAI: GPT-5.5', note: 'Найвища якість · повільніше й дорожче' }
 ]
 
 /**
@@ -64,9 +64,9 @@ export const SUGGESTED_OPENROUTER_MODELS: SuggestedModel[] = [
  * Muse Voice WAV-only), which Cutawan's chunked MP3 uploads cannot meet.
  */
 export const OPENROUTER_TRANSCRIPTION_MODELS: SuggestedModel[] = [
-  { id: 'openai/whisper-1', name: 'OpenAI: Whisper', note: 'Recommended · served by OpenAI' },
-  { id: 'openai/whisper-large-v3-turbo', name: 'OpenAI: Whisper Large v3 Turbo', note: 'Fastest and cheapest' },
-  { id: 'openai/whisper-large-v3', name: 'OpenAI: Whisper Large v3', note: 'Most accurate open Whisper' }
+  { id: 'openai/whisper-1', name: 'OpenAI: Whisper', note: 'Рекомендовано · від OpenAI' },
+  { id: 'openai/whisper-large-v3-turbo', name: 'OpenAI: Whisper Large v3 Turbo', note: 'Найшвидше й найдешевше' },
+  { id: 'openai/whisper-large-v3', name: 'OpenAI: Whisper Large v3', note: 'Найточніший відкритий Whisper' }
 ]
 
 export function isSupportedTranscriptionModel(id: string): boolean {
@@ -150,13 +150,13 @@ function formatPrice(value: number): string {
 export function formatModelPrice(model: OpenRouterModel): string | null {
   const { promptPricePerM: input, completionPricePerM: output } = model
   if (input === null || output === null) return null
-  if (input === 0 && output === 0) return 'Free'
-  return `$${formatPrice(input)} in · $${formatPrice(output)} out per 1M`
+  if (input === 0 && output === 0) return 'Безкоштовно'
+  return `$${formatPrice(input)} вхід · $${formatPrice(output)} вихід за 1M`
 }
 
 /** "128K context", "1M context". */
 export function formatContext(tokens: number | null): string | null {
   if (!tokens) return null
-  if (tokens >= 1_000_000) return `${Math.round(tokens / 100_000) / 10}M context`.replace('.0M', 'M')
-  return `${Math.round(tokens / 1000)}K context`
+  if (tokens >= 1_000_000) return `${Math.round(tokens / 100_000) / 10}M контекст`.replace('.0M', 'M')
+  return `${Math.round(tokens / 1000)}K контекст`
 }

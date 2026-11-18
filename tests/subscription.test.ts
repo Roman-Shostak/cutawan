@@ -77,19 +77,19 @@ it('serializes budget reservations so concurrent requests cannot overspend the c
 })
 it('rejects API-key login before inference and without reserving usage', async () => {
   mock.login = 'Logged in using an API key'
-  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('Sign in to Codex with ChatGPT')
+  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('Увійдіть у Codex через ChatGPT')
   expect(mock.spawn).toHaveBeenCalledTimes(1)
 })
 it('counts failed inference and never silently retries or falls back', async () => {
   mock.fail = true
   await expect(subscriptionJSON(messages, schema)).rejects.toBeInstanceOf(SubscriptionError)
-  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('request cap reached')
+  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('денного ліміту запитів')
   expect(mock.spawn).toHaveBeenCalledTimes(2)
 })
 it('does not reuse another model’s cached output', async () => {
   await subscriptionJSON(messages, schema)
   configureSubscription({ ...DEFAULT_SUBSCRIPTION, provider: 'chatgpt', codexModel: 'another-model', dailyRequestLimit: 1 })
-  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('request cap reached')
+  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('денного ліміту запитів')
 })
 it('does not make any requests after cancellation', async () => {
   await expect(subscriptionJSON(messages, schema, AbortSignal.abort())).rejects.toBeInstanceOf(SubscriptionError)
@@ -98,7 +98,7 @@ it('does not make any requests after cancellation', async () => {
 
 it('fails closed when another process holds the usage reservation', async () => {
   await writeFile(join(mock.root, 'subscription-usage.lock'), '')
-  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('Could not reserve ChatGPT usage')
+  await expect(subscriptionJSON(messages, schema)).rejects.toThrow('Не вдалося зарезервувати використання ChatGPT')
   expect(mock.spawn).toHaveBeenCalledTimes(1) // authentication only
 })
 

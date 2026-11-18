@@ -37,7 +37,7 @@ export default function SizeTargetControls({
   if (compact) {
     return (
       <div data-testid="export-size-limit" className="mb-3">
-        <SizeToggle label="Fit under a size limit" enabled={enabled} onToggle={() => setEnabled(!enabled)} className="" />
+        <SizeToggle label="Вмістити в ліміт розміру" enabled={enabled} onToggle={() => setEnabled(!enabled)} className="" />
         {enabled && (
           <div className="mt-2 flex items-center gap-2">
             <SizeInput
@@ -46,7 +46,7 @@ export default function SizeTargetControls({
               onCommit={setMb}
               className="w-20 rounded-lg border border-surface-600 bg-surface-850 px-2.5 py-1.5 text-xs tabular-nums text-zinc-200 focus:border-white/25 focus:outline-none"
             />
-            <span className="text-[11px] text-zinc-500">MB</span>
+            <span className="text-[11px] text-zinc-500">МБ</span>
             <div className="flex flex-1 flex-wrap gap-1">
               <SizePresets mb={mb} onPick={setMb} compact />
             </div>
@@ -60,14 +60,12 @@ export default function SizeTargetControls({
     <div className="mt-5" data-testid="export-size-limit">
       <label className="flex items-center gap-2 text-sm font-medium">
         <HardDrive size={15} className="text-accent-400" />
-        Fit under a size limit
+        Вмістити в ліміт розміру
       </label>
       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-        Encode once to land under a megabyte cap — Discord, email, WhatsApp, and anywhere that
-        rejects large files. Quality and GPU encoder are ignored while this is on: the cap
-        decides the bitrate, on CPU.
+        Кодує так, щоб файл вмістився в ліміт мегабайтів — для Discord, пошти, WhatsApp і всюди, де великі файли не приймають. Поки це ввімкнено, якість і GPU-кодек ігноруються: бітрейт визначає ліміт, кодування на CPU.
       </p>
-      <SizeToggle label="Limit export size" enabled={enabled} onToggle={() => setEnabled(!enabled)} className="mt-2.5" />
+      <SizeToggle label="Ліміт розміру експорту" enabled={enabled} onToggle={() => setEnabled(!enabled)} className="mt-2.5" />
       {enabled && (
         <>
           <div className="mt-2.5 flex items-center gap-2">
@@ -77,7 +75,7 @@ export default function SizeTargetControls({
               onCommit={setMb}
               className="w-24 rounded-xl border border-surface-600 bg-surface-850 px-3 py-2 text-sm tabular-nums text-zinc-200 focus:border-white/25 focus:outline-none"
             />
-            <span className="text-xs text-zinc-500">MB</span>
+            <span className="text-xs text-zinc-500">МБ</span>
           </div>
           <div className="mt-2 grid grid-cols-5 gap-1.5">
             <SizePresets mb={mb} onPick={setMb} />
@@ -191,7 +189,7 @@ function SizePresets({
                 }`
           }
         >
-          {compact ? preset : `${preset} MB`}
+          {compact ? preset : `${preset} МБ`}
         </button>
       ))}
     </>

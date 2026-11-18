@@ -11,10 +11,10 @@ export default function ScoreBadge({
   size?: 'sm' | 'lg'
 }): React.JSX.Element {
   const color = scoreColor(score)
-  const label = kind === 'editorial' ? 'Editorial' : 'Legacy score'
+  const label = kind === 'editorial' ? 'Редакторська' : 'Стара оцінка'
   const description = kind === 'editorial'
-    ? `Editorial assessment: ${score} out of 100. Audience performance and the exported video have not been verified.`
-    : `Legacy AI score: ${score} out of 99. Regenerate to apply the current editorial assessment.`
+    ? `Редакторська оцінка: ${score} зі 100. Реакцію аудиторії й експортоване відео не перевіряли.`
+    : `Стара оцінка ШІ: ${score} з 99. Згенеруйте заново, щоб застосувати поточну редакторську оцінку.`
   if (size === 'lg') {
     return (
       <div

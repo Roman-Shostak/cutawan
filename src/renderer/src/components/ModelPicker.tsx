@@ -37,7 +37,7 @@ function modelRow(model: OpenRouterModel, note?: string): Row {
  */
 export default function ModelPicker({
   label, value, onChange, models, suggested, pinned = [], loading = false, testId,
-  allowCustom = true, suggestedTitle = 'Suggested'
+  allowCustom = true, suggestedTitle = 'Рекомендовані'
 }: {
   label: string
   value: string
@@ -71,12 +71,12 @@ export default function ModelPicker({
     const suggestedIds = new Set(suggestedRows.map(r => r.id))
     const allRows = models.filter(m => !suggestedIds.has(m.id) && match(m)).map(m => modelRow(m))
     const custom: Row[] = allowCustom && q && looksLikeModelId(q) && !byId.has(q) && !pinned.some(p => p.id === q)
-      ? [{ id: q, name: `Use “${q}”`, detail: 'Custom model id', badges: [] }] : []
+      ? [{ id: q, name: `Використати «${q}»`, detail: 'Власний ідентифікатор моделі', badges: [] }] : []
     return [
-      { title: 'On this computer', rows: pinnedRows },
+      { title: 'На цьому комп’ютері', rows: pinnedRows },
       { title: suggestedTitle, rows: suggestedRows },
-      { title: q ? 'Matching models' : `${suggestedRows.length ? 'More models' : 'All models'} · ${allRows.length}`, rows: allRows },
-      { title: 'Custom', rows: custom }
+      { title: q ? 'Знайдені моделі' : `${suggestedRows.length ? 'Інші моделі' : 'Усі моделі'} · ${allRows.length}`, rows: allRows },
+      { title: 'Власна', rows: custom }
     ].filter(g => g.rows.length > 0)
   }, [query, pinned, suggested, models, byId, allowCustom, suggestedTitle])
   const flat = useMemo(() => groups.flatMap(g => g.rows), [groups])
@@ -133,11 +133,11 @@ export default function ModelPicker({
       <div className="flex items-center gap-2 border-b border-surface-700 px-3 py-2">
         <Search size={14} className="text-zinc-500" />
         <input autoFocus value={query} onChange={e => { setQuery(e.target.value); setActiveId(null) }} onKeyDown={onKey}
-          placeholder="Search models by name or id…" aria-label={`Search ${label}`} data-testid={testId && `${testId}-search`}
+          placeholder="Шукати модель за назвою чи ідентифікатором…" aria-label={`Пошук: ${label}`} data-testid={testId && `${testId}-search`}
           className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none" />
       </div>
       <div ref={list} role="listbox" className="max-h-72 overflow-y-auto py-1">
-        {groups.length === 0 && <p className="px-3 py-4 text-center text-xs text-zinc-500">No models match “{query}”.</p>}
+        {groups.length === 0 && <p className="px-3 py-4 text-center text-xs text-zinc-500">Немає моделей за запитом «{query}».</p>}
         {groups.map(group => <div key={group.title}>
           <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">{group.title}</p>
           {group.rows.map(row => {

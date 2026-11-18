@@ -63,8 +63,8 @@ function run(command: string, args: string[], signal: AbortSignal, progress: (me
     })
     child.on('error', error => done(new Error(`Could not run ${command}: ${error.message}`)))
     child.on('close', code => done(signal.aborted
-      ? new Error('Whisper installation cancelled. You can retry to resume the download.')
-      : code === 0 ? undefined : new Error(`Whisper installation failed (${code}). ${tail.trim()}`)))
+      ? new Error('Встановлення Whisper скасовано. Повторіть, щоб продовжити завантаження.')
+      : code === 0 ? undefined : new Error(`Не вдалося встановити Whisper (${code}). ${tail.trim()}`)))
   })
 }
 
@@ -76,7 +76,7 @@ export async function installLocalWhisper(
   onProgress: (progress: ImportProgress) => void
 ): Promise<LocalWhisperInstallResult> {
   if (model !== 'small' && model !== 'large-v3') throw new Error('Unsupported Whisper model.')
-  if (currentInstall) throw new Error('Whisper installation is already running.')
+  if (currentInstall) throw new Error('Встановлення Whisper уже триває.')
   const controller = new AbortController()
   currentInstall = controller
   const paths = localWhisperPaths(app.getPath('userData'))
@@ -85,7 +85,7 @@ export async function installLocalWhisper(
   try {
     await mkdir(paths.models, { recursive: true })
     if (!existsSync(paths.python)) {
-      announce(0.05, 'Creating a private Python environment…')
+      announce(0.05, 'Створюю окреме середовище Python…')
       const chosen = requestedPython.trim() || 'python'
       try {
         await run(chosen, ['-m', 'venv', paths.environment], controller.signal, message => announce(0.1, message))
@@ -94,7 +94,7 @@ export async function installLocalWhisper(
         await run('python3', ['-m', 'venv', paths.environment], controller.signal, message => announce(0.1, message))
       }
     }
-    announce(0.2, 'Installing faster-whisper in the private environment…')
+    announce(0.2, 'Встановлюю faster-whisper в окреме середовище…')
     // PyAV 15+ dropped the `metadata_errors` argument that faster-whisper's
     // decode_audio still passes, so every transcription fails with a TypeError.
     // Keep PyAV below 15 and wheels-only: pip then picks the newest 14.x that
@@ -106,7 +106,7 @@ export async function installLocalWhisper(
     // Optional: the CPU path still works if it cannot be installed.
     let gpu = false
     if (process.platform === 'darwin' && process.arch === 'arm64') {
-      announce(0.35, 'Installing Apple Silicon acceleration…')
+      announce(0.35, 'Встановлюю прискорення для Apple Silicon…')
       try {
         await run(paths.python, ['-m', 'pip', 'install', '--disable-pip-version-check', 'mlx-whisper'],
           controller.signal, message => announce(0.4, message))
@@ -116,7 +116,7 @@ export async function installLocalWhisper(
         console.warn('Apple Silicon Whisper acceleration unavailable; using the CPU:', error)
       }
     }
-    announce(0.45, `Downloading the ${model} speech model…`)
+    announce(0.45, `Завантажую модель мови ${model}…`)
     const download = (withGpu: boolean): Promise<void> =>
       run(paths.python, ['-u', installScript(), model, modelPath, ...(withGpu ? ['--mlx'] : [])],
         controller.signal, message => announce(-1, message))
@@ -129,9 +129,9 @@ export async function installLocalWhisper(
       console.warn('Apple Silicon Whisper model unavailable; using the CPU:', error)
       await download(false)
     }
-    announce(0.95, 'Checking the local transcription setup…')
+    announce(0.95, 'Перевіряю локальне розпізнавання…')
     await run(paths.python, ['-c', 'import ctranslate2, faster_whisper; print("ready")'], controller.signal, () => {})
-    announce(1, 'Local Whisper is ready.')
+    announce(1, 'Локальний Whisper готовий.')
     return { pythonPath: paths.python, modelPath }
   } finally {
     currentInstall = null

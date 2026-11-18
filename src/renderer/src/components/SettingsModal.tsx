@@ -43,7 +43,7 @@ const ANALYSIS_MODELS = ['gpt-5.4-mini', 'gpt-5.4', 'gpt-5.5', 'gpt-4o-mini']
 const ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1'
 const CLAUDE_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5']
 
-/** True when the API base URL points at Anthropic, so Claude models are suggested. */
+/** True when the Адреса API (base URL) points at Anthropic, so Claude models are suggested. */
 function isAnthropicBaseUrl(url: string): boolean {
   return /(^|\.|\/\/)anthropic\.com(\/|$)/i.test(url.trim())
 }
@@ -57,52 +57,52 @@ const ENDPOINT_PRESETS: Array<{ id: string; label: string; baseUrl: string; mode
 /** Whisper transcription languages. 'auto' lets Whisper detect per video. */
 const TRANSCRIPTION_LANGUAGES: Array<{ value: string; label: string }> = [
   { value: 'uk', label: 'Українська' },
-  { value: 'en', label: 'English' },
-  { value: 'auto', label: 'Auto-detect' },
-  { value: 'cy', label: 'Welsh' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'nl', label: 'Dutch' },
-  { value: 'pl', label: 'Polish' },
-  { value: 'ru', label: 'Russian' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'zh', label: 'Chinese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'hi', label: 'Hindi' },
-  { value: 'ar', label: 'Arabic' }
+  { value: 'en', label: 'Англійська' },
+  { value: 'auto', label: 'Автовизначення' },
+  { value: 'cy', label: 'Валлійська' },
+  { value: 'es', label: 'Іспанська' },
+  { value: 'fr', label: 'Французька' },
+  { value: 'de', label: 'Німецька' },
+  { value: 'it', label: 'Італійська' },
+  { value: 'pt', label: 'Португальська' },
+  { value: 'nl', label: 'Нідерландська' },
+  { value: 'pl', label: 'Польська' },
+  { value: 'ru', label: 'Російська' },
+  { value: 'ja', label: 'Японська' },
+  { value: 'zh', label: 'Китайська' },
+  { value: 'ko', label: 'Корейська' },
+  { value: 'hi', label: 'Гінді' },
+  { value: 'ar', label: 'Арабська' }
 ]
 
 const ENCODERS: Array<{ value: EncoderPreference; label: string; hint: string }> = [
-  { value: 'auto', label: 'Auto', hint: 'GPU when ready' },
-  { value: 'gpu', label: 'Hardware', hint: navigator.platform.startsWith('Mac') ? 'VideoToolbox' : 'NVIDIA NVENC' },
+  { value: 'auto', label: 'Авто', hint: 'GPU, коли доступний' },
+  { value: 'gpu', label: 'Апаратний', hint: navigator.platform.startsWith('Mac') ? 'VideoToolbox' : 'NVIDIA NVENC' },
   { value: 'cpu', label: 'CPU', hint: 'libx264' }
 ]
 
 const QUALITIES: Array<{ value: QualityPreference; label: string; hint: string }> = [
-  { value: 'draft', label: 'Draft', hint: 'Fastest' },
-  { value: 'standard', label: 'Standard', hint: 'Balanced' },
-  { value: 'high', label: 'High', hint: 'Best quality' }
+  { value: 'draft', label: 'Чернетка', hint: 'Найшвидше' },
+  { value: 'standard', label: 'Стандарт', hint: 'Збалансовано' },
+  { value: 'high', label: 'Висока', hint: 'Найкраща якість' }
 ]
 
 const WATERMARK_POSITIONS: Array<{ value: WatermarkPosition; label: string }> = [
-  { value: 'top-left', label: 'Top left' },
-  { value: 'top-right', label: 'Top right' },
-  { value: 'bottom-left', label: 'Bottom left' },
-  { value: 'bottom-right', label: 'Bottom right' }
+  { value: 'top-left', label: 'Угорі ліворуч' },
+  { value: 'top-right', label: 'Угорі праворуч' },
+  { value: 'bottom-left', label: 'Унизу ліворуч' },
+  { value: 'bottom-right', label: 'Унизу праворуч' }
 ]
 
 type SectionId = 'general' | 'export' | 'branding' | 'voice' | 'fonts' | 'updates'
 
 const SECTIONS: Array<{ id: SectionId; label: string; icon: typeof KeyRound }> = [
-  { id: 'general', label: 'API & models', icon: KeyRound },
-  { id: 'export', label: 'Export', icon: MonitorPlay },
-  { id: 'branding', label: 'Branding', icon: Stamp },
-  { id: 'voice', label: 'Brand voice', icon: MessageSquareQuote },
-  { id: 'fonts', label: 'Fonts', icon: Type },
-  { id: 'updates', label: 'Updates', icon: RefreshCw }
+  { id: 'general', label: 'API і моделі', icon: KeyRound },
+  { id: 'export', label: 'Експорт', icon: MonitorPlay },
+  { id: 'branding', label: 'Брендинг', icon: Stamp },
+  { id: 'voice', label: 'Голос бренду', icon: MessageSquareQuote },
+  { id: 'fonts', label: 'Шрифти', icon: Type },
+  { id: 'updates', label: 'Оновлення', icon: RefreshCw }
 ]
 
 export default function SettingsModal(): React.JSX.Element {
@@ -154,7 +154,7 @@ export default function SettingsModal(): React.JSX.Element {
 
   const downloadGpu = async (): Promise<void> => {
     setGpuError(null)
-    setGpuProgress({ progress: 0, message: 'Starting download…' })
+    setGpuProgress({ progress: 0, message: 'Починаю завантаження…' })
     try {
       await window.cutawan.downloadGpuFfmpeg()
       await refreshSettings()
@@ -175,7 +175,7 @@ export default function SettingsModal(): React.JSX.Element {
         onClick={(e) => e.stopPropagation()}
       >
         <aside className="flex w-56 shrink-0 flex-col border-r border-surface-700 bg-surface-900/50 p-3">
-          <h2 className="px-2 py-2 text-lg font-semibold">Settings</h2>
+          <h2 className="px-2 py-2 text-lg font-semibold">Налаштування</h2>
           <nav className="mt-1 flex flex-col gap-0.5">
             {SECTIONS.map(({ id, label, icon: Icon }) => (
               <button
@@ -214,23 +214,21 @@ export default function SettingsModal(): React.JSX.Element {
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <KeyRound size={15} className="text-accent-400" />
-                  OpenAI API key
+                  API-ключ
                 </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Used for {subscription.localTranscription ? 'clip analysis' : 'Whisper transcription and clip analysis'}. Stored encrypted on this machine
-            and never sent anywhere except the API base below (OpenAI by default).
+            Використовується для {subscription.localTranscription ? 'аналізу кліпів' : 'розпізнавання мови Whisper і аналізу кліпів'}. Зберігається зашифрованим на цьому комп’ютері й надсилається лише на адресу API нижче (за замовчуванням OpenAI).
           </p>
           {settings !== null && !settings.keyStorageSecure && (
             <p className="mt-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-400">
-              Your OS keychain is unavailable, so the key is stored only obfuscated on disk.
-              Prefer a key with a spending limit on this machine.
+              Системна в’язка ключів недоступна, тому ключ зберігається на диску лише замаскованим. Краще використовуйте на цьому комп’ютері ключ з лімітом витрат.
             </p>
           )}
           <input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={settings?.hasApiKey ? `Current: ${settings.apiKeyMasked}` : 'sk-…'}
+            placeholder={settings?.hasApiKey ? `Поточний: ${settings.apiKeyMasked}` : 'sk-…'}
             className="mt-2.5 w-full rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none"
           />
           <a
@@ -239,20 +237,17 @@ export default function SettingsModal(): React.JSX.Element {
             rel="noreferrer"
             className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-zinc-400 underline decoration-zinc-600 underline-offset-2 hover:text-zinc-200"
           >
-            Get an API key <ExternalLink size={11} />
+            Отримати API-ключ <ExternalLink size={11} />
           </a>
         </div>
 
         <div className="mt-5">
           <label className="flex items-center gap-2 text-sm font-medium">
             <Server size={15} className="text-accent-400" />
-            API base URL
+            Адреса API (base URL)
           </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            OpenAI-compatible endpoint for analysis (and transcription, unless you set a
-            separate one below). Azure OpenAI, Anthropic, OpenRouter, Groq, LM Studio, Ollama.
-            Leave blank for api.openai.com. Anthropic has no Whisper, so pair it with local
-            transcription above.
+            OpenAI-сумісна адреса для аналізу (і розпізнавання, якщо нижче не вказано окрему). Azure OpenAI, Anthropic, OpenRouter, Groq, LM Studio, Ollama. Залиште порожнім для api.openai.com. В Anthropic немає Whisper, тому поєднуйте його з локальним розпізнаванням вище.
           </p>
           <div className="mt-2.5 flex flex-wrap gap-2">
             {ENDPOINT_PRESETS.map((preset) => {
@@ -283,8 +278,7 @@ export default function SettingsModal(): React.JSX.Element {
           </div>
           {settings?.openaiBaseUrlFromEnv && (
             <p className="mt-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-400">
-              OPENAI_BASE_URL is set in the environment, so it overrides these fields until
-              you unset it.
+              У середовищі задано OPENAI_BASE_URL, тому він перекриває ці поля, доки ви його не приберете.
             </p>
           )}
           <input
@@ -297,19 +291,17 @@ export default function SettingsModal(): React.JSX.Element {
             className="mt-2.5 w-full rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none disabled:opacity-50"
           />
           <label className="mt-3 block text-[11px] font-medium text-zinc-500">
-            Transcription base URL (optional)
+            Адреса для розпізнавання (необов’язково)
           </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Point Whisper at a local server (faster-whisper, whisper.cpp’s OpenAI-compatible
-            endpoint) while clip finding stays on the chat base above. Needs word-level
-            timestamps. Leave blank to use the same URL.
+            Спрямуйте Whisper на локальний сервер (faster-whisper, OpenAI-сумісна адреса whisper.cpp), а пошук кліпів лишиться на адресі вище. Потрібні таймкоди для кожного слова. Залиште порожнім, щоб використовувати ту саму адресу.
           </p>
           <input
             data-testid="transcription-base-url"
             type="url"
             value={transcriptionBaseUrl}
             onChange={(e) => setTranscriptionBaseUrl(e.target.value)}
-            placeholder="Same as API base URL"
+            placeholder="Та сама, що й адреса API"
             disabled={settings?.openaiBaseUrlFromEnv}
             className="mt-2 w-full rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none disabled:opacity-50"
           />
@@ -318,13 +310,13 @@ export default function SettingsModal(): React.JSX.Element {
         <div className="mt-5">
           <label className="flex items-center gap-2 text-sm font-medium">
             <Brain size={15} className="text-accent-400" />
-            Analysis model
+            Модель аналізу
           </label>
           <p className="mt-1 text-xs text-zinc-500">
             {isAnthropicBaseUrl(openaiBaseUrl)
-              ? 'claude-haiku-5-5 is fast and cheap; claude-sonnet-5-5 and claude-opus-5-5 pick moments more carefully.'
-              : 'gpt-5.4-mini is fast and cheap; gpt-5.4 and gpt-5.5 pick moments more carefully. gpt-4o-mini is the budget legacy option.'}{' '}
-            Any model id your endpoint serves can be typed below.
+              ? 'claude-haiku-5-5 — швидка й дешева; claude-sonnet-5-5 та claude-opus-5-5 добирають моменти ретельніше.'
+              : 'gpt-5.4-mini — швидка й дешева; gpt-5.4 та gpt-5.5 добирають моменти ретельніше. gpt-4o-mini — бюджетний застарілий варіант.'}{' '}
+            Нижче можна вписати будь-який ідентифікатор моделі, який підтримує ваша адреса.
           </p>
           <input
             data-testid="analysis-model"
@@ -357,11 +349,10 @@ export default function SettingsModal(): React.JSX.Element {
         <div className="mt-5">
           <label className="flex items-center gap-2 text-sm font-medium">
             <Languages size={15} className="text-accent-400" />
-            Transcription language
+            Мова розпізнавання
           </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            The spoken language Whisper transcribes. Pick the language you speak rather than
-            Auto-detect — auto sometimes mislabels the language (e.g. English as Welsh).
+            Мова, яку розпізнає Whisper. Вибирайте мову, якою говорите, а не автовизначення — воно іноді помиляється (наприклад, приймає англійську за валлійську).
           </p>
           <select
             value={settings?.transcriptionLanguage ?? 'uk'}
@@ -382,7 +373,7 @@ export default function SettingsModal(): React.JSX.Element {
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white disabled:opacity-60"
               >
                 {saved ? <Check size={16} /> : null}
-                {saved ? 'Saved' : saving ? 'Saving…' : 'Save settings'}
+                {saved ? 'Saved' : saving ? 'Зберігаю…' : 'Зберегти налаштування'}
               </button>
             </div>
           )}
@@ -392,7 +383,7 @@ export default function SettingsModal(): React.JSX.Element {
               <div>
           <label className="flex items-center gap-2 text-sm font-medium">
             <MonitorPlay size={15} className="text-accent-400" />
-            Export encoder
+            Кодек експорту
           </label>
           <div
             className={`mt-2 flex items-start gap-2 rounded-lg px-3 py-2 text-xs leading-relaxed ${
@@ -402,7 +393,7 @@ export default function SettingsModal(): React.JSX.Element {
             }`}
           >
             <Zap size={13} className="mt-0.5 shrink-0" />
-            <span>{settings?.gpu.detail ?? 'Checking GPU…'}</span>
+            <span>{settings?.gpu.detail ?? 'Перевіряю GPU…'}</span>
           </div>
           {settings?.gpu.canDownloadFfmpeg &&
             (gpuProgress ? (
@@ -424,7 +415,7 @@ export default function SettingsModal(): React.JSX.Element {
                 className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
               >
                 <Download size={13} />
-                Download GPU-enabled ffmpeg (~40 MB, one time)
+                Завантажити ffmpeg з підтримкою GPU (~40 МБ, одноразово)
               </button>
             ))}
           {gpuError && <p className="mt-2 text-xs text-red-400">{gpuError}</p>}
@@ -450,7 +441,7 @@ export default function SettingsModal(): React.JSX.Element {
         <div className="mt-5">
           <label className="flex items-center gap-2 text-sm font-medium">
             <MonitorPlay size={15} className="text-accent-400" />
-            Export quality
+            Якість експорту
           </label>
           <div className="mt-2.5 grid grid-cols-3 gap-2">
             {QUALITIES.map((q) => (
@@ -499,25 +490,23 @@ function BrandingSection(): React.JSX.Element {
     <div className="max-w-xl">
       <label className="flex items-center gap-2 text-sm font-medium">
         <Stamp size={15} className="text-accent-400" />
-        Branding
+        Брендинг
       </label>
       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-        Set your logo, watermark, and brand colours. Colours apply as defaults across every
-        caption style in the preview and exports.
+        Задайте логотип, водяний знак і кольори бренду. Кольори застосовуються за замовчуванням до всіх стилів субтитрів у превʼю й експорті.
       </p>
 
       <div className="mt-4 rounded-xl border border-surface-700 bg-surface-850 p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
           <Palette size={15} className="text-accent-400" />
-          Brand colours
+          Кольори бренду
         </div>
         <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-          Primary is the highlight or pill fill; secondary is the active-word text on pill styles.
-          Leave text/outline on preset to keep each style&apos;s defaults.
+          Основний — колір підсвічування або плашки; додатковий — колір активного слова в стилях з плашкою. Залиште текст і обведення на пресеті, щоб зберегти типові кольори кожного стилю.
         </p>
 
         <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg border border-surface-600 px-3 py-2.5">
-          <span className="text-xs font-medium text-zinc-300">Use brand colours on captions</span>
+          <span className="text-xs font-medium text-zinc-300">Використовувати кольори бренду в субтитрах</span>
           <button
             onClick={() => saveColors({ enabled: !colors.enabled })}
             className={`relative h-5 w-9 shrink-0 rounded-full transition ${colors.enabled ? 'bg-zinc-100' : 'bg-surface-600'}`}
@@ -530,38 +519,38 @@ function BrandingSection(): React.JSX.Element {
 
         <div className="mt-3 grid grid-cols-2 gap-3">
           <ColorField
-            label="Primary"
+            label="Основний"
             value={colors.primaryColor}
             onChange={(v) => saveColors({ primaryColor: v })}
           />
           <ColorField
-            label="Secondary"
+            label="Додатковий"
             value={colors.secondaryColor}
             onChange={(v) => saveColors({ secondaryColor: v })}
           />
           <ColorField
-            label="Caption text"
+            label="Текст субтитрів"
             value={colors.textColor ?? ''}
             pickerFallback="#FFFFFF"
-            placeholder="Style default"
+            placeholder="Як у стилі"
             onChange={(v) => saveColors({ textColor: v })}
             onClear={colors.textColor ? () => saveColors({ textColor: null }) : undefined}
           />
           <ColorField
-            label="Outline"
+            label="Обведення"
             value={colors.outlineColor ?? ''}
             pickerFallback="#000000"
-            placeholder="Style default"
+            placeholder="Як у стилі"
             onChange={(v) => saveColors({ outlineColor: v })}
             onClear={colors.outlineColor ? () => saveColors({ outlineColor: null }) : undefined}
           />
           <ColorField
-            label="Hook text"
+            label="Текст гачка"
             value={colors.hookTextColor}
             onChange={(v) => saveColors({ hookTextColor: v })}
           />
           <ColorField
-            label="Hook background"
+            label="Фон гачка"
             value={colors.hookBackgroundColor}
             onChange={(v) => saveColors({ hookBackgroundColor: v })}
           />
@@ -569,7 +558,7 @@ function BrandingSection(): React.JSX.Element {
 
         <div className="mt-3 rounded-lg border border-surface-600 bg-black/40 px-3 py-2.5">
           <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-            Preview
+            Превʼю
           </div>
           {(() => {
             const preview = resolveCaptionStyle('beast', colors)
@@ -580,8 +569,8 @@ function BrandingSection(): React.JSX.Element {
                   className="text-sm font-bold"
                   style={{ color: preview.textColor, fontFamily: `'${preview.fontFamily}', sans-serif` }}
                 >
-                  SO I{' '}
-                  <span style={{ color: preview.highlightColor }}>SAID</span>
+                  ОТ ЦЕ{' '}
+                  <span style={{ color: preview.highlightColor }}>ТАК</span>
                 </span>
                 <span
                   className="rounded px-1.5 py-0.5 text-sm font-bold"
@@ -591,7 +580,7 @@ function BrandingSection(): React.JSX.Element {
                     fontFamily: `'${pill.fontFamily}', sans-serif`
                   }}
                 >
-                  SAID
+                  ТАК
                 </span>
               </div>
             )
@@ -602,17 +591,16 @@ function BrandingSection(): React.JSX.Element {
           onClick={() => saveColors({ ...DEFAULT_BRAND_COLORS, enabled: colors.enabled })}
           className="mt-3 text-[11px] text-zinc-500 transition hover:text-zinc-300"
         >
-          Reset colours to Cutawan defaults
+          Скинути кольори до типових
         </button>
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-zinc-500">
-        Overlay your logo or watermark on every clip — shown in the preview and burned into
-        exports, underneath the captions.
+        Накладайте логотип або водяний знак на кожен кліп — він видний у превʼю й вшивається в експорт під субтитрами.
       </p>
 
       <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg border border-surface-600 px-3 py-2.5">
-        <span className="text-xs font-medium text-zinc-300">Watermark on exports</span>
+        <span className="text-xs font-medium text-zinc-300">Водяний знак в експорті</span>
         <button
           onClick={() => void saveSettings({ branding: { enabled: !branding?.enabled } })}
           className={`relative h-5 w-9 shrink-0 rounded-full transition ${branding?.enabled ? 'bg-zinc-100' : 'bg-surface-600'}`}
@@ -627,7 +615,7 @@ function BrandingSection(): React.JSX.Element {
         {branding?.imagePath ? (
           <img
             src={window.cutawan.mediaUrl(branding.imagePath)}
-            alt="Watermark"
+            alt="Водяний знак"
             className="h-12 w-12 shrink-0 rounded-lg border border-surface-600 bg-black/40 object-contain p-1"
           />
         ) : (
@@ -639,12 +627,12 @@ function BrandingSection(): React.JSX.Element {
           onClick={() => void selectBrandingLogo()}
           className="flex-1 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
         >
-          {branding?.imagePath ? 'Replace logo image…' : 'Choose logo image…'}
+          {branding?.imagePath ? 'Замінити логотип…' : 'Вибрати логотип…'}
         </button>
         {branding?.imagePath && (
           <button
             onClick={() => void saveSettings({ branding: { imagePath: null, enabled: false } })}
-            title="Remove logo"
+            title="Прибрати логотип"
             className="rounded-lg p-2 text-zinc-500 transition hover:bg-surface-800 hover:text-red-400"
           >
             <Trash2 size={14} />
@@ -672,8 +660,8 @@ function BrandingSection(): React.JSX.Element {
           <div className="mt-3 grid grid-cols-2 gap-4">
             <div>
               <div className="mb-1 flex justify-between text-[11px] text-zinc-500">
-                <span>Size</span>
-                <span>{Math.round(branding.scale * 100)}% width</span>
+                <span>Розмір</span>
+                <span>{Math.round(branding.scale * 100)}% ширини</span>
               </div>
               <input
                 type="range"
@@ -688,7 +676,7 @@ function BrandingSection(): React.JSX.Element {
             </div>
             <div>
               <div className="mb-1 flex justify-between text-[11px] text-zinc-500">
-                <span>Opacity</span>
+                <span>Непрозорість</span>
                 <span>{Math.round(branding.opacity * 100)}%</span>
               </div>
               <input
@@ -736,7 +724,7 @@ function ColorField({
             onClick={onClear}
             className="text-[10px] text-zinc-600 transition hover:text-zinc-300"
           >
-            Use preset
+            Як у пресеті
           </button>
         )}
       </div>
@@ -820,16 +808,15 @@ function BrandVoiceSection(): React.JSX.Element {
     <div className="max-w-xl">
       <label className="flex items-center gap-2 text-sm font-medium">
         <MessageSquareQuote size={15} className="text-accent-400" />
-        Brand voice
+        Голос бренду
       </label>
       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-        Steers the AI-generated post captions so they sound like your organisation. Leave blank
-        for a neutral, friendly default.
+        Налаштовує підписи до постів від ШІ, щоб вони звучали у вашому стилі. Залиште порожнім для нейтрального дружнього тону.
       </p>
-      {field('brandName', 'Brand / organisation name', 'e.g. your company name', 1)}
-      {field('tone', 'Tone of voice', 'e.g. warm, upbeat and human; confident but never salesy', 2)}
-      {field('style', 'Writing style', 'e.g. British English, short sentences, no emojis', 2)}
-      {field('avoid', 'Things to avoid', 'e.g. no hashtags, no hype, no corporate jargon', 2)}
+      {field('brandName', 'Назва бренду / каналу', 'напр. sh0stack', 1)}
+      {field('tone', 'Тон', 'напр. легкий, з гумором, по-дружньому; впевнено, але без реклами', 2)}
+      {field('style', 'Стиль письма', 'напр. українською, короткі речення, мінімум емодзі', 2)}
+      {field('avoid', 'Чого уникати', 'напр. без кліше, без хайпу, без канцеляриту', 2)}
     </div>
   )
 }
@@ -844,11 +831,10 @@ function FontsSection(): React.JSX.Element {
     <div className="max-w-xl">
       <label className="flex items-center gap-2 text-sm font-medium">
         <Type size={15} className="text-accent-400" />
-        Custom fonts
+        Власні шрифти
       </label>
       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-        Upload TTF/OTF fonts to use for captions. Pick them per clip in the editor’s Captions
-        section — previews and exports both use them.
+        Завантажуйте шрифти TTF/OTF для субтитрів. Вибирайте їх для кожного кліпу в розділі «Субтитри» редактора — їх використовують і превʼю, і експорт.
       </p>
 
       {customFonts.length > 0 && (
@@ -866,7 +852,7 @@ function FontsSection(): React.JSX.Element {
               </div>
               <button
                 onClick={() => void removeFont(f.fileName)}
-                title="Remove this font"
+                title="Видалити цей шрифт"
                 className="shrink-0 rounded-md p-1.5 text-zinc-600 transition hover:bg-surface-700 hover:text-red-400"
               >
                 <Trash2 size={13} />
@@ -889,7 +875,7 @@ function FontsSection(): React.JSX.Element {
         className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800 disabled:opacity-60"
       >
         {adding ? <Loader2 size={13} className="animate-spin" /> : <Type size={13} />}
-        Add font files (.ttf / .otf)
+        Додати файли шрифтів (.ttf / .otf)
       </button>
     </div>
   )
@@ -916,21 +902,21 @@ function UpdatesSection(): React.JSX.Element {
     <div className="max-w-xl">
       <label className="flex items-center gap-2 text-sm font-medium">
         <RefreshCw size={15} className="text-accent-400" />
-        App updates
+        Оновлення програми
       </label>
       <p className="mt-1 text-xs text-zinc-500">
-        Cutawan v{settings?.appVersion ?? '…'} — updates are checked on launch and every six hours.
+        Cutawan v{settings?.appVersion ?? '…'} — оновлення перевіряються під час запуску й кожні шість годин.
         {settings?.appVersion && (
           <button type="button" onClick={() => setNotesOpen(true)} data-testid="whats-new-button"
             className="ml-1.5 text-zinc-400 underline underline-offset-2 hover:text-zinc-200">
-            What&apos;s new in this version
+            Що нового в цій версії
           </button>
         )}
       </p>
       {notesOpen && settings?.appVersion && <WhatsNewDialog version={settings.appVersion} onClose={() => setNotesOpen(false)} />}
       {upcoming.length > 0 && (
         <div className="mt-2.5 rounded-lg border border-surface-600 bg-surface-850 px-3 py-2.5" data-testid="update-notes">
-          <p className="mb-2 text-xs font-medium text-zinc-200">What&apos;s new in v{updateCheck?.latestVersion}</p>
+          <p className="mb-2 text-xs font-medium text-zinc-200">Що нового у v{updateCheck?.latestVersion}</p>
           <NotesList blocks={upcoming} compact />
         </div>
       )}
@@ -953,20 +939,20 @@ function UpdatesSection(): React.JSX.Element {
           <SourceUpdater latestVersion={updateCheck.latestVersion ?? ''} releaseUrl={updateCheck.releaseUrl} />
         ) : (
           <div className="mt-2.5 rounded-lg border border-surface-600 px-3 py-2.5 text-xs text-zinc-300">
-            <p>{updateCheck.availabilityMessage ?? `Cutawan v${updateCheck.latestVersion} is available.`}</p>
+            <p>{updateCheck.availabilityMessage ?? `Доступна версія Cutawan v${updateCheck.latestVersion}.`}</p>
             <a href={updateCheck.releaseUrl} target="_blank" rel="noreferrer"
-              className="mt-2 inline-flex font-medium text-accent-400 underline">View release on GitHub</a>
+              className="mt-2 inline-flex font-medium text-accent-400 underline">Відкрити реліз на GitHub</a>
           </div>
         )
       ) : updateCheck && !checking && !updateCheck.error ? (
         <p className="mt-2.5 rounded-lg bg-surface-850 px-3 py-2 text-xs text-zinc-400">
-          {updateCheck.latestVersion ? `You're up to date (latest release is v${updateCheck.latestVersion}).`
-            : 'No published release was found.'}
+          {updateCheck.latestVersion ? `У вас найновіша версія (останній реліз — v${updateCheck.latestVersion}).`
+            : 'Опублікованих релізів не знайдено.'}
         </p>
       ) : null}
       {updateCheck?.error && <p role="status" className="mt-2 text-xs text-amber-400">{updateCheck.error}</p>}
       {updateCheck && <p className="mt-2 text-[11px] text-zinc-500">
-        Last check: {new Date(updateCheck.checkedAt).toLocaleString()}
+        Остання перевірка: {new Date(updateCheck.checkedAt).toLocaleString()}
       </p>}
 
       <button
@@ -979,7 +965,7 @@ function UpdatesSection(): React.JSX.Element {
         ) : (
           <RefreshCw size={13} />
         )}
-        {checking ? 'Checking…' : 'Check for updates'}
+        {checking ? 'Перевіряю…' : 'Перевірити оновлення'}
       </button>
     </div>
   )
@@ -1005,10 +991,10 @@ function SourceUpdater({
         <div className="mt-2.5 rounded-lg border border-surface-600 px-3 py-2.5">
           <div className="flex items-center gap-2 text-xs text-zinc-300">
             <Loader2 size={13} className="animate-spin" />
-            {sourceUpdate.message || 'Updating…'}
+            {sourceUpdate.message || 'Оновлюю…'}
           </div>
           <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
-            Updating to v{latestVersion} — the app restarts by itself when done (about a minute).
+            Оновлення до v{latestVersion} — після завершення програма перезапуститься сама (приблизно хвилина).
           </p>
         </div>
       )
@@ -1024,7 +1010,7 @@ function SourceUpdater({
               className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
             >
               <RefreshCw size={13} />
-              Retry
+              Повторити
             </button>
             <a
               href={releaseUrl}
@@ -1033,7 +1019,7 @@ function SourceUpdater({
               className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
             >
               <ExternalLink size={13} />
-              Release page
+              Сторінка релізу
             </a>
           </div>
         </>
@@ -1046,15 +1032,13 @@ function SourceUpdater({
             className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 px-3 py-2.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/25"
           >
             <Download size={13} />
-            Update to v{latestVersion} and restart
+            Оновити до v{latestVersion} і перезапустити
           </button>
           <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
-            Pulls the latest code, reinstalls dependencies, rebuilds, and restarts the app (about a
-            minute). Needs a git checkout — zip downloads should use the{' '}
+            Завантажує найновіший код, перевстановлює залежності, перезбирає й перезапускає програму (приблизно хвилина). Потрібна git-копія — для zip-завантажень використовуйте{' '}
             <a href={releaseUrl} target="_blank" rel="noreferrer" className="text-zinc-400 underline">
-              release page
-            </a>{' '}
-            instead.
+              сторінку релізу
+            </a>.
           </p>
         </>
       )
@@ -1081,41 +1065,39 @@ function UpdateInstaller({ latestVersion, releaseUrl, download, manual, busy, on
     <div className="mt-2.5" aria-live="polite">
       {download.status === 'downloading' ? (
         <div className="rounded-lg border border-surface-600 px-3 py-2.5">
-          <p className="text-xs text-zinc-300">Downloading {latestVersion && `v${latestVersion}`}… {Math.round(download.progress * 100)}%</p>
-          <div role="progressbar" aria-label="Update download" aria-valuemin={0} aria-valuemax={100}
+          <p className="text-xs text-zinc-300">Завантаження {latestVersion && `v${latestVersion}`}… {Math.round(download.progress * 100)}%</p>
+          <div role="progressbar" aria-label="Завантаження оновлення" aria-valuemin={0} aria-valuemax={100}
             aria-valuenow={Math.round(download.progress * 100)} className="mt-2 h-1 overflow-hidden rounded-full bg-surface-700">
             <div className="h-full bg-emerald-400" style={{ width: `${Math.round(download.progress * 100)}%` }} />
           </div>
-          {manual && <button onClick={onCancel} className="mt-2 text-xs text-zinc-400 underline">Cancel download</button>}
+          {manual && <button onClick={onCancel} className="mt-2 text-xs text-zinc-400 underline">Скасувати завантаження</button>}
         </div>
       ) : download.status === 'downloaded' ? (
         <>
-          <p className="text-xs text-zinc-300">{manual ? 'Installer verified and ready.' : `Cutawan v${latestVersion} is ready to install.`}</p>
+          <p className="text-xs text-zinc-300">{manual ? 'Інсталятор перевірено й готово.' : `Cutawan v${latestVersion} готовий до встановлення.`}</p>
           <button onClick={manual ? onOpen : onInstall} disabled={!manual && busy} className={buttonClass}>
             {manual ? <Download size={13} /> : <RefreshCw size={13} />}
-            {manual ? `Open installer for v${latestVersion}` : `Restart to update to v${latestVersion}`}
+            {manual ? `Відкрити інсталятор v${latestVersion}` : `Перезапустити й оновити до v${latestVersion}`}
           </button>
-          {!manual && busy && <p className="mt-2 text-xs text-amber-400">Finish your current processing or export before restarting.</p>}
+          {!manual && busy && <p className="mt-2 text-xs text-amber-400">Перед перезапуском завершіть поточну обробку або експорт.</p>}
           {manual && <p className="mt-2 text-xs leading-relaxed text-zinc-400">
-            Open the installer, quit Cutawan when your work is finished, then drag Cutawan into Applications and choose Replace.
-            Reopen Cutawan from Applications. Your saved projects and settings stay in place.
-            macOS may ask you to allow the app in System Settings → Privacy &amp; Security.
+            Відкрийте інсталятор, закрийте Cutawan після завершення роботи, перетягніть Cutawan у «Програми» й виберіть «Замінити». Знову відкрийте Cutawan із «Програм». Збережені проєкти й налаштування залишаться. macOS може попросити дозволити програму в «Системні параметри → Приватність і безпека».
           </p>}
         </>
       ) : (
         <>
           <button onClick={onDownload} className={buttonClass} data-testid="download-update">
             <Download size={13} />
-            {download.status === 'error' ? 'Retry download' : `Download ${manual ? 'Mac installer' : 'update'} v${latestVersion}`}
+            {download.status === 'error' ? 'Повторити завантаження' : `Завантажити ${manual ? 'інсталятор для Mac' : 'оновлення'} v${latestVersion}`}
           </button>
           <p className="mt-2 text-xs text-zinc-500">{manual
-            ? 'Downloads and verifies the installer here. You will replace the app in Applications.'
-            : 'Keep working while it downloads. You choose when to restart and install.'}</p>
+            ? 'Завантажує й перевіряє інсталятор тут. Програму в «Програмах» ви заміните самі.'
+            : 'Працюйте далі, поки йде завантаження. Коли перезапустити й встановити — вирішуєте ви.'}</p>
         </>
       )}
       {download.error && <p role="alert" className="mt-2 text-xs text-red-400">{download.error}</p>}
       <a href={releaseUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs text-zinc-400 underline">
-        Release notes and other downloads
+        Нотатки до релізу та інші завантаження
       </a>
     </div>
   )

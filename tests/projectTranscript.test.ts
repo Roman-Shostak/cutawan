@@ -8,7 +8,7 @@ describe('no-audio input', () => {
     const project = { transcript: null, video: { hasAudio: false, path: 'does-not-exist.webm' } } as Project
     await expect(ensureTranscript(project, 'does-not-exist', {
       apiKey: 'unused', model: 'unused', language: 'en', span: { from: 0, to: 1 }, noSpeechError: 'No speech'
-    }, progress)).rejects.toThrow('This video has no audio track')
+    }, progress)).rejects.toThrow('У цьому відео немає аудіодоріжки')
     expect(progress).not.toHaveBeenCalled()
   })
   it('does not let a saved empty visual-only transcript bypass caption-mode speech requirements', async () => {

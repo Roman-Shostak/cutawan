@@ -48,20 +48,20 @@ export function WhatsNewDialog({ version, onClose }: { version: string; onClose:
   // otherwise confine the full-window overlay to the settings panel.
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm" onClick={onClose}>
-      <div role="dialog" aria-label={`What's new in Cutawan ${version}`} data-testid="whats-new"
+      <div role="dialog" aria-label={`Що нового в Cutawan ${version}`} data-testid="whats-new"
         className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl shadow-black/70"
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
             <Sparkles size={18} className="text-accent-400" />
-            What&apos;s new in v{version}
+            Що нового у v{version}
           </h2>
-          <button type="button" onClick={onClose} aria-label="Close" data-testid="whats-new-close" className="rounded-lg p-1 text-zinc-500 hover:bg-surface-700 hover:text-zinc-200">
+          <button type="button" onClick={onClose} aria-label="Закрити" data-testid="whats-new-close" className="rounded-lg p-1 text-zinc-500 hover:bg-surface-700 hover:text-zinc-200">
             <X size={16} />
           </button>
         </div>
         <div className="mt-4">
-          {blocks.length ? <NotesList blocks={blocks} /> : <p className="text-xs text-zinc-500">No release notes for this version.</p>}
+          {blocks.length ? <NotesList blocks={blocks} /> : <p className="text-xs text-zinc-500">Для цієї версії немає нотаток до релізу.</p>}
         </div>
       </div>
     </div>,

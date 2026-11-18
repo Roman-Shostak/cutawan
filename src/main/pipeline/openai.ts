@@ -91,7 +91,7 @@ export function configureOpenAiEndpoints(opts: {
  */
 function assertKeyMatchesRoute(apiKey: string): void {
   if (routeCredential && apiKey !== routeCredential()) {
-    throw new OpenAIError('The AI connection changed in Settings while this was running. Start it again.', 409)
+    throw new OpenAIError('Підключення до ШІ змінилося в Налаштуваннях під час роботи. Запустіть ще раз.', 409)
   }
 }
 
@@ -200,7 +200,7 @@ async function raiseForStatus(res: Response, context: string): Promise<void> {
     /* non-JSON error body */
   }
   if (res.status === 401) {
-    throw new OpenAIError('The API rejected the API key. Check it in Settings.', 401)
+    throw new OpenAIError('API відхилив API-ключ. Перевірте його в Налаштуваннях.', 401)
   }
   throw new OpenAIError(`${context} failed (HTTP ${res.status})${detail ? `: ${detail}` : ''}`, res.status)
 }
@@ -329,7 +329,7 @@ async function transcribeWithOpenRouter(
 export function requireWordTimings(res: WhisperResponse, model: string): WhisperResponse {
   if (res.words?.length || !res.text?.trim()) return res
   throw new OpenAIError(
-    `${model} returned no word timestamps. Choose another Whisper model or local transcription in Settings.`
+    `${model} не повернула таймкоди слів. Виберіть іншу модель Whisper або локальне розпізнавання в Налаштуваннях.`
   )
 }
 

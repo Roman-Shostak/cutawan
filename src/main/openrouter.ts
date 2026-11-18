@@ -78,17 +78,17 @@ export async function listOpenRouterModels(refresh = false): Promise<OpenRouterC
  */
 export async function checkOpenRouterKey(typed?: string): Promise<{ message: string }> {
   const key = typed?.trim() || getOpenRouterKey()
-  if (!key) throw new Error('Enter an OpenRouter API key first.')
+  if (!key) throw new Error('Спершу введіть API-ключ OpenRouter.')
   let res: { status: number; body: unknown }
   try {
     res = await getJson('/key', key)
   } catch (error) {
-    throw new Error(`Could not reach OpenRouter: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
+    throw new Error(`Не вдалося з’єднатися з OpenRouter: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
-  if (res.status === 401 || res.status === 403) throw new Error('OpenRouter rejected this key. Copy it again from openrouter.ai/keys.')
-  if (res.status !== 200) throw new Error(`OpenRouter key check failed (HTTP ${res.status}).`)
+  if (res.status === 401 || res.status === 403) throw new Error('OpenRouter відхилив цей ключ. Скопіюйте його ще раз з openrouter.ai/keys.')
+  if (res.status !== 200) throw new Error(`Не вдалося перевірити ключ OpenRouter (HTTP ${res.status}).`)
   const data = (res.body as { data?: { limit_remaining?: unknown; is_free_tier?: unknown } } | null)?.data
-  const remaining = typeof data?.limit_remaining === 'number' ? ` $${data.limit_remaining.toFixed(2)} of this key’s limit remains.` : ''
-  const free = data?.is_free_tier === true ? ' This account is on the free tier; add credits to use paid models.' : ''
-  return { message: `OpenRouter accepted the key.${remaining}${free}` }
+  const remaining = typeof data?.limit_remaining === 'number' ? ` Залишок ліміту ключа: $${data.limit_remaining.toFixed(2)}.` : ''
+  const free = data?.is_free_tier === true ? ' Акаунт на безкоштовному тарифі; поповніть кредити, щоб користуватися платними моделями.' : ''
+  return { message: `OpenRouter прийняв ключ.${remaining}${free}` }
 }

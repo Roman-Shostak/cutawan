@@ -77,7 +77,7 @@ export async function installImportCookiesFile(sourcePath: string): Promise<stri
   const raw = await readFile(sourcePath, 'utf8')
   if (!isNetscapeCookiesFile(raw)) {
     throw new Error(
-      'That file does not look like a Netscape cookies export. Use the "Get cookies.txt LOCALLY" browser extension while signed in to the site, then import the .txt file it saves.'
+      'Цей файл не схожий на експорт кукі у форматі Netscape. Увійдіть на сайт, скористайтеся розширенням браузера «Get cookies.txt LOCALLY» й імпортуйте збережений ним .txt-файл.'
     )
   }
   await mkdir(cookiesDir(), { recursive: true })

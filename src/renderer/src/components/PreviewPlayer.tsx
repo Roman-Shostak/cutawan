@@ -349,14 +349,14 @@ export default function PreviewPlayer({
       <div className="flex w-full max-w-md items-center gap-3">
         <button
           onClick={togglePlay}
-          aria-label={playing ? 'Pause preview' : 'Play preview'}
+          aria-label={playing ? 'Пауза превʼю' : 'Відтворити превʼю'}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-800 text-zinc-200 transition hover:bg-surface-700"
         >
           {playing ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
         </button>
         <button
           onClick={restart}
-          aria-label="Restart preview"
+          aria-label="Превʼю з початку"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-800 text-zinc-400 transition hover:bg-surface-700"
         >
           <RotateCcw size={14} />

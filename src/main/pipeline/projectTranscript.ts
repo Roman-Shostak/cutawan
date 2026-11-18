@@ -45,10 +45,10 @@ export async function ensureTranscript(
 
   if (project.transcript) {
     if (!project.transcript.segments.length && !options.allowNoSpeech) throw new Error(options.noSpeechError)
-    onProgress({ stage: 'transcribe', progress: at(1), message: 'Using saved transcript…' })
+    onProgress({ stage: 'transcribe', progress: at(1), message: 'Використовую збережену розшифровку…' })
     if (!project.transcript.speech && project.video.hasAudio) {
       // Older projects: add voice activity once so cuts land in silence.
-      onProgress({ stage: 'transcribe', progress: at(1), message: 'Detecting speech…' })
+      onProgress({ stage: 'transcribe', progress: at(1), message: 'Шукаю мову в аудіо…' })
       const speech = await speechFor(project.video.path, signal)
       if (speech) {
         project.transcript = { ...project.transcript, speech }
@@ -65,23 +65,23 @@ export async function ensureTranscript(
       await updateProject(project.id, (p) => {
         if (p.video.path === project.video.path && (p.sourceRevision ?? 0) === (project.sourceRevision ?? 0)) p.transcript = transcript
       })
-      onProgress({ stage: 'transcribe', progress: at(1), message: 'No audio track — looking for visual moments.' })
+      onProgress({ stage: 'transcribe', progress: at(1), message: 'Немає аудіодоріжки — шукаю візуальні моменти.' })
       return transcript
     }
-    throw new Error('This video has no audio track. Speech-based clip selection needs a video with spoken audio.')
+    throw new Error('У цьому відео немає аудіодоріжки. Для добору кліпів за мовою потрібне відео з мовою.')
   }
 
   // Voice activity is local and independent of the transcription route, so
   // it runs alongside it rather than adding to the wait.
   const speech = speechFor(project.video.path, signal)
   speech.catch(() => undefined) // awaited below; only cancellation rejects
-  onProgress({ stage: 'audio', progress: at(0), message: 'Extracting audio…' })
+  onProgress({ stage: 'audio', progress: at(0), message: 'Витягую аудіо…' })
   const chunks = await extractAudioChunks(
     project.video.path,
     workDir,
     project.video.durationSec,
     (f) =>
-      onProgress({ stage: 'audio', progress: at(f * AUDIO_SHARE), message: 'Extracting audio…' }),
+      onProgress({ stage: 'audio', progress: at(f * AUDIO_SHARE), message: 'Витягую аудіо…' }),
     signal,
     transcriptionChunkSec(AUDIO_CHUNK_SEC)
   )
@@ -89,7 +89,7 @@ export async function ensureTranscript(
   onProgress({
     stage: 'transcribe',
     progress: at(AUDIO_SHARE),
-    message: 'Transcribing with Whisper…'
+    message: 'Розпізнаю мову через Whisper…'
   })
   const transcript = await transcribeChunks(
     options.apiKey,
@@ -102,8 +102,8 @@ export async function ensureTranscript(
         progress: at(AUDIO_SHARE + f * TRANSCRIBE_SHARE),
         message:
           chunks.length > 1
-            ? `Transcribing (part ${Math.min(chunks.length, Math.ceil(f * chunks.length))}/${chunks.length})…`
-            : 'Transcribing with Whisper…'
+            ? `Розпізнаю мову (частина ${Math.min(chunks.length, Math.ceil(f * chunks.length))}/${chunks.length})…`
+            : 'Розпізнаю мову через Whisper…'
       }),
     signal
   )
@@ -115,7 +115,7 @@ export async function ensureTranscript(
   onProgress({
     stage: 'transcribe',
     progress: at(AUDIO_SHARE + TRANSCRIBE_SHARE),
-    message: 'Measuring vocal energy…'
+    message: 'Вимірюю енергію голосу…'
   })
   await annotateEnergy(transcript, chunks)
 

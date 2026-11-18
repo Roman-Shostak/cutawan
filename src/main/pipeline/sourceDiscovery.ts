@@ -7,6 +7,7 @@ import { SOURCE_DISCOVERY_BUDGET as BUDGET, type SourceDiscoveryReport, type Sou
 import { throwIfSubscriptionError, usesSubscription } from '../subscription'
 import { chatApiBase, chatJSON, OpenAIError, type ChatContentPart } from './openai'
 import { extractFramesAtTimes } from './visualScore'
+import { creatorTextInstruction } from '@shared/outputLanguage'
 
 /** Bump when the prompts, sampling, validation, or interpretation changes. */
 const CONFIG_VERSION = 'source-discovery-2'
@@ -197,7 +198,7 @@ async function inspectSamples(
     let response: unknown
     try {
       onRequest()
-      response = await chatJSON<unknown>(opts.apiKey, opts.model, [{ role: 'system', content: SYSTEM }, { role: 'user', content: parts }],
+      response = await chatJSON<unknown>(opts.apiKey, opts.model, [{ role: 'system', content: `${SYSTEM}\n\n${creatorTextInstruction(opts.transcript?.language, 'title, summary, reason and observation')}` }, { role: 'user', content: parts }],
         refinement ? 'source_event_refinement' : 'source_event_discovery', schema(refinement ? 1 : MAX_PROPOSALS, times.length), opts.signal)
     } catch (error) {
       throwIfProviderBlocked(error)
@@ -322,7 +323,7 @@ export async function discoverSourceMoments(opts: DiscoverSourceMomentsOptions):
   opts.signal?.throwIfAborted()
   const windows = sourceDiscoveryWindows(opts.durationSec)
   if (!Number.isFinite(opts.maxClipDurationSec) || opts.maxClipDurationSec < 3) throw new Error('Source discovery needs a clip duration of at least 3 seconds.')
-  opts.onProgress?.('Checking source discovery cache…')
+  opts.onProgress?.('Перевіряю кеш візуального пошуку…')
   const source = await fingerprint(opts.videoPath, opts.signal)
   const key = cacheKey(opts, source.hash)
   const cachePath = join(opts.cacheDir, `source-discovery-${key}.json`)
@@ -351,7 +352,7 @@ export async function discoverSourceMoments(opts: DiscoverSourceMomentsOptions):
   const coarse: Array<{ proposal: ObservedProposal; times: number[]; start: number; end: number }> = []
   for (const [index, window] of windows.entries()) {
     opts.signal?.throwIfAborted()
-    opts.onProgress?.(`Discovering visual moments across the source (${index + 1}/${windows.length})…`)
+    opts.onProgress?.(`Шукаю візуальні моменти у відео (${index + 1}/${windows.length})…`)
     const entry: SourceDiscoveryWindow = { ...window, status: 'scanned' }
     try {
       const result = await inspectSamples(opts, window.sampleTimes, false, () => { report.analysisRequestCount++ })
@@ -377,7 +378,7 @@ export async function discoverSourceMoments(opts: DiscoverSourceMomentsOptions):
   }
   for (const [index, candidate] of selected.entries()) {
     opts.signal?.throwIfAborted()
-    opts.onProgress?.(`Checking visual setup, action and result (${index + 1}/${selected.length})…`)
+    opts.onProgress?.(`Перевіряю підготовку, дію й результат (${index + 1}/${selected.length})…`)
     // Include adjoining source context so refinement can identify a setup or
     // result just outside the coarse proposal rather than confirm its title.
     const margin = Math.min(12, Math.max(2, (candidate.end - candidate.start) * .2))

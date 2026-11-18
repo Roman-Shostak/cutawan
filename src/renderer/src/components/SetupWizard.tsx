@@ -96,118 +96,116 @@ export default function SetupWizard(): React.JSX.Element {
   return <div className="fixed inset-0 z-[60] overflow-y-auto px-5 py-10 text-zinc-100" style={{ backgroundColor: '#09090b' }}>
     <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl shadow-black/70 sm:p-8">
       <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-400">Welcome to Cutawan</p>
-        <h1 className="mt-2 text-3xl font-bold">Choose how your clips get made</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-400">Вітаємо в Cutawan</p>
+        <h1 className="mt-2 text-3xl font-bold">Виберіть, як створюватимуться кліпи</h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-          Pick an AI connection for clip finding. You can change it later in Settings. Video editing and export stay on your computer.
+          Виберіть підключення до ШІ для пошуку кліпів. Його можна змінити пізніше в Налаштуваннях. Монтаж і експорт відбуваються на вашому комп’ютері.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button type="button" onClick={() => chooseRoute('chatgpt')}
           className={`rounded-xl border p-4 text-left ${route === 'chatgpt' ? 'border-accent-400 bg-accent-400/10' : 'border-surface-600 bg-surface-900 hover:border-zinc-500'}`}>
-          <span className="block text-sm font-semibold">ChatGPT sign-in</span>
-          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">Use Codex for analysis and local Whisper for speech. No OpenAI API key.</span>
+          <span className="block text-sm font-semibold">Вхід через ChatGPT</span>
+          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">Codex для аналізу й локальний Whisper для мови. Без API-ключа OpenAI.</span>
         </button>
         <button type="button" onClick={() => chooseRoute('api')}
           className={`rounded-xl border p-4 text-left ${route === 'api' ? 'border-accent-400 bg-accent-400/10' : 'border-surface-600 bg-surface-900 hover:border-zinc-500'}`}>
-          <span className="block text-sm font-semibold">OpenAI-compatible API</span>
-          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">Use an API key and a supported endpoint. API usage is billed separately.</span>
+          <span className="block text-sm font-semibold">OpenAI-сумісний API</span>
+          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">API-ключ і сумісна адреса (OpenAI, Anthropic тощо). Використання API оплачується окремо.</span>
         </button>
         <button type="button" onClick={() => chooseRoute('local')}
           className={`rounded-xl border p-4 text-left ${route === 'local' ? 'border-accent-400 bg-accent-400/10' : 'border-surface-600 bg-surface-900 hover:border-zinc-500'}`}>
-          <span className="block text-sm font-semibold">Local captions only</span>
-          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">Transcribe and caption full videos without an AI service. Clip finding needs a connection later.</span>
+          <span className="block text-sm font-semibold">Лише локальні субтитри</span>
+          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">Розпізнавання й субтитри для цілих відео без ШІ-сервісу. Для пошуку кліпів підключення знадобиться пізніше.</span>
         </button>
         <button type="button" onClick={() => chooseRoute('openrouter')} data-testid="setup-route-openrouter"
           className={`rounded-xl border p-4 text-left ${route === 'openrouter' ? 'border-accent-400 bg-accent-400/10' : 'border-surface-600 bg-surface-900 hover:border-zinc-500'}`}>
           <span className="block text-sm font-semibold">OpenRouter</span>
-          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">One key for hundreds of models from OpenAI, Anthropic, Google and more. Pay as you go.</span>
+          <span className="mt-2 block text-xs leading-relaxed text-zinc-400">Один ключ для сотень моделей від OpenAI, Anthropic, Google та інших. Оплата за використання.</span>
         </button>
       </div>
 
       {route === 'chatgpt' && <div className="mt-5 space-y-4 rounded-xl border border-surface-600 bg-surface-900 p-5">
         <div>
-          <h2 className="text-base font-semibold">ChatGPT + local Whisper</h2>
+          <h2 className="text-base font-semibold">ChatGPT + локальний Whisper</h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-            Install the Codex CLI, run <code>codex login</code>, and choose ChatGPT sign-in.
-            Your plan’s Codex allowance and limits apply. Cutawan never reads your login tokens or silently switches to paid API billing.
+            Встановіть Codex CLI, виконайте <code>codex login</code> і виберіть вхід через ChatGPT. Діють ліміти Codex вашого тарифу. Cutawan ніколи не читає ваші токени входу й не перемикається непомітно на платний API.
           </p>
-          <a href="https://developers.openai.com/codex/cli" target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs underline">Codex install instructions ↗</a>
+          <a href="https://developers.openai.com/codex/cli" target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs underline">Інструкція зі встановлення Codex ↗</a>
         </div>
-        <label className="block text-xs">Codex executable
+        <label className="block text-xs">Виконуваний файл Codex
           <input value={subscription.codexPath} onChange={e => updateSubscription({ codexPath: e.target.value })}
             className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         </label>
-        <label className="block text-xs">Python executable (Python 3.10+)
+        <label className="block text-xs">Виконуваний файл Python (Python 3.10+)
           <input value={subscription.pythonPath} onChange={e => updateSubscription({ pythonPath: e.target.value })}
             className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         </label>
         <LocalWhisperSetup pythonPath={subscription.pythonPath} onConfigured={(pythonPath, whisperModelPath) => updateSubscription({ pythonPath, whisperModelPath })} />
-        <label className="block text-xs">Whisper model folder (if already installed)
+        <label className="block text-xs">Папка моделі Whisper (якщо вже встановлена)
           <input value={subscription.whisperModelPath} onChange={e => updateSubscription({ whisperModelPath: e.target.value })}
-            placeholder="Folder containing model.bin" className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
+            placeholder="Папка з файлом model.bin" className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         </label>
-        <p className="text-xs text-zinc-500">Default: Luna, low reasoning, with a cap of 10 new requests per UTC day. A video may need more; adjust the cap in Settings. Checking makes no AI request.</p>
+        <p className="text-xs text-zinc-500">За замовчуванням: Luna, низький рівень міркувань, ліміт 10 нових запитів на добу (UTC). Відео може потребувати більше — змініть ліміт у Налаштуваннях. Перевірка не робить запитів до ШІ.</p>
         <button type="button" onClick={() => void check()} disabled={busy}
-          className="rounded-lg border border-surface-600 px-3 py-2 text-sm disabled:opacity-50">{busy ? 'Checking…' : 'Check connection and Whisper'}</button>
-        {verified && <p className="text-xs text-emerald-400">Ready to start.</p>}
+          className="rounded-lg border border-surface-600 px-3 py-2 text-sm disabled:opacity-50">{busy ? 'Перевіряю…' : 'Перевірити підключення й Whisper'}</button>
+        {verified && <p className="text-xs text-emerald-400">Готово до старту.</p>}
       </div>}
 
       {route === 'api' && <div className="mt-5 rounded-xl border border-surface-600 bg-surface-900 p-5">
-        <h2 className="text-base font-semibold">API connection</h2>
+        <h2 className="text-base font-semibold">Підключення до API</h2>
         <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-          ChatGPT subscriptions do not include OpenAI API usage. This route uses separate API billing for transcription and analysis.
-          You can set a different OpenAI-compatible endpoint in Settings later.
+          Підписка ChatGPT не включає використання API. Цей варіант оплачує розпізнавання й аналіз окремо через API. Іншу OpenAI-сумісну адресу (наприклад Anthropic) можна вказати пізніше в Налаштуваннях.
         </p>
-        <label className="mt-4 block text-xs">OpenAI API key
-          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={settings?.hasApiKey ? 'Key already configured' : 'sk-…'}
+        <label className="mt-4 block text-xs">API-ключ
+          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={settings?.hasApiKey ? 'Ключ уже налаштовано' : 'sk-…'}
             className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         </label>
-        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs underline">Create an API key ↗</a>
+        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs underline">Створити API-ключ ↗</a>
         <label className="mt-5 flex items-center gap-2 text-xs text-zinc-300">
           <input type="checkbox" checked={subscription.localTranscription} onChange={e => updateSubscription({ localTranscription: e.target.checked })} />
-          Transcribe speech locally instead of using the transcription API
+          Розпізнавати мову локально замість API розпізнавання
         </label>
         {subscription.localTranscription && <div className="mt-4 space-y-3">
-          <label className="block text-xs">Python executable (Python 3.10+)
+          <label className="block text-xs">Виконуваний файл Python (Python 3.10+)
             <input value={subscription.pythonPath} onChange={e => updateSubscription({ pythonPath: e.target.value })}
               className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
           </label>
           <LocalWhisperSetup pythonPath={subscription.pythonPath} onConfigured={(pythonPath, whisperModelPath) => updateSubscription({ pythonPath, whisperModelPath })} />
-          <label className="block text-xs">Whisper model folder (if already installed)
+          <label className="block text-xs">Папка моделі Whisper (якщо вже встановлена)
             <input value={subscription.whisperModelPath} onChange={e => updateSubscription({ whisperModelPath: e.target.value })}
-              placeholder="Folder containing model.bin" className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
+              placeholder="Папка з файлом model.bin" className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
           </label>
         </div>}
       </div>}
 
       {route === 'local' && <div className="mt-5 space-y-4 rounded-xl border border-surface-600 bg-surface-900 p-5">
         <div>
-          <h2 className="text-base font-semibold">Local captions only</h2>
+          <h2 className="text-base font-semibold">Лише локальні субтитри</h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-            Caption a whole video, trim it, and export without an API key. This route does not find or rank highlights.
+            Субтитри на все відео, обрізка й експорт без API-ключа. Цей варіант не шукає й не оцінює яскраві моменти.
           </p>
         </div>
-        <label className="block text-xs">Python executable (Python 3.10+)
+        <label className="block text-xs">Виконуваний файл Python (Python 3.10+)
           <input value={subscription.pythonPath} onChange={e => updateSubscription({ pythonPath: e.target.value })}
             className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         </label>
         <LocalWhisperSetup pythonPath={subscription.pythonPath} onConfigured={(pythonPath, whisperModelPath) => updateSubscription({ pythonPath, whisperModelPath })} />
-        <label className="block text-xs">Whisper model folder (if already installed)
+        <label className="block text-xs">Папка моделі Whisper (якщо вже встановлена)
           <input value={subscription.whisperModelPath} onChange={e => updateSubscription({ whisperModelPath: e.target.value })}
-            placeholder="Folder containing model.bin" className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
+            placeholder="Папка з файлом model.bin" className="mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         </label>
         <button type="button" onClick={() => void checkLocal()} disabled={busy}
-          className="rounded-lg border border-surface-600 px-3 py-2 text-sm disabled:opacity-50">{busy ? 'Checking…' : 'Check local Whisper'}</button>
-        {verified && <p className="text-xs text-emerald-400">Ready to caption videos locally.</p>}
+          className="rounded-lg border border-surface-600 px-3 py-2 text-sm disabled:opacity-50">{busy ? 'Перевіряю…' : 'Перевірити локальний Whisper'}</button>
+        {verified && <p className="text-xs text-emerald-400">Готово до локальних субтитрів.</p>}
       </div>}
 
       {route === 'openrouter' && <div className="mt-5 space-y-4 rounded-xl border border-surface-600 bg-surface-900 p-5">
         <div>
-          <h2 className="text-base font-semibold">OpenRouter connection</h2>
+          <h2 className="text-base font-semibold">Підключення OpenRouter</h2>
           <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-            Pick the model that finds your clips and how speech gets transcribed. You can change both later in Settings.
+            Виберіть модель для пошуку кліпів і спосіб розпізнавання мови. Обидва можна змінити пізніше в Налаштуваннях.
           </p>
         </div>
         <OpenRouterSetup value={openRouter} onChange={patch => { setOpenRouter(current => ({ ...current, ...patch })); setMessage('') }}
@@ -216,10 +214,10 @@ export default function SetupWizard(): React.JSX.Element {
 
       {message && <p role="status" className="mt-4 text-xs text-zinc-300">{message}</p>}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <button type="button" onClick={() => void finish(true)} disabled={busy} className="text-xs text-zinc-400 underline disabled:opacity-50">Explore without setup</button>
+        <button type="button" onClick={() => void finish(true)} disabled={busy} className="text-xs text-zinc-400 underline disabled:opacity-50">Переглянути без налаштування</button>
         <button type="button" onClick={() => void finish()} disabled={busy || route === null || ((route === 'chatgpt' || route === 'local') && !verified) || (route === 'api' && !apiKey.trim() && !settings?.hasApiKey)
             || (route === 'openrouter' && !openRouter.apiKey.trim() && !settings?.hasOpenRouterKey)}
-          className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-900 disabled:opacity-40">Start using Cutawan</button>
+          className="rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-semibold text-zinc-900 disabled:opacity-40">Почати роботу з Cutawan</button>
       </div>
     </div>
   </div>

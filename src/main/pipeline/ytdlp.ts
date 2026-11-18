@@ -56,12 +56,12 @@ export async function ensureYtDlp(onProgress: ProgressFn): Promise<string> {
   const binPath = ytDlpPath()
   if (existsSync(binPath)) return binPath
 
-  onProgress({ progress: -1, message: 'Downloading yt-dlp (one-time setup)…' })
+  onProgress({ progress: -1, message: 'Завантажую yt-dlp (одноразово)…' })
   await mkdir(binaryDir(), { recursive: true })
   const url = `https://github.com/yt-dlp/yt-dlp/releases/latest/download/${binaryName()}`
   const res = await fetch(url, { redirect: 'follow' })
   if (!res.ok || !res.body) {
-    throw new Error(`Could not download yt-dlp (HTTP ${res.status}). Check your connection.`)
+    throw new Error(`Не вдалося завантажити yt-dlp (HTTP ${res.status}). Перевірте підключення до інтернету.`)
   }
   const total = Number(res.headers.get('content-length') ?? 0)
   const tmpPath = `${binPath}.download`
@@ -72,7 +72,7 @@ export async function ensureYtDlp(onProgress: ProgressFn): Promise<string> {
       if (total > 0) {
         onProgress({
           progress: Math.min(1, seen / total) * 0.15,
-          message: 'Downloading yt-dlp (one-time setup)…'
+          message: 'Завантажую yt-dlp (одноразово)…'
         })
       }
       yield chunk
@@ -238,7 +238,7 @@ export async function withSelfUpdateRetry<T>(
   } catch (err) {
     if (!(err instanceof YtDlpError) || selfUpdatedThisRun) throw err
     selfUpdatedThisRun = true
-    onProgress({ progress: -1, message: 'Updating yt-dlp…' })
+    onProgress({ progress: -1, message: 'Оновлюю yt-dlp…' })
     try {
       await runYtDlp(binPath, ['-U'])
     } catch {
@@ -289,7 +289,7 @@ export async function fetchUrlMeta(
   if (data._type === 'playlist') {
     const entries = (data.entries ?? []).filter((e) => (e.duration ?? 0) > 0)
     if (entries.length === 0) {
-      throw new Error('This URL does not contain a downloadable video.')
+      throw new Error('За цим посиланням немає відео для завантаження.')
     }
     const main = entries.reduce((a, b) => ((b.duration ?? 0) > (a.duration ?? 0) ? b : a))
     // Prefer the entry's direct media URL: the entry webpage_url often points
@@ -298,7 +298,7 @@ export async function fetchUrlMeta(
   }
 
   if (!data.duration || data.duration <= 0) {
-    throw new Error('This URL does not point to a downloadable video.')
+    throw new Error('Це посилання не веде на відео для завантаження.')
   }
   return {
     id: data.id ?? 'video',
@@ -335,9 +335,9 @@ export async function downloadUrlVideo(
       if (match) {
         // Map download to 0.15..0.95 of the import (after binary setup).
         const fraction = Number(match[1]) / 100
-        onProgress({ progress: 0.15 + fraction * 0.8, message: 'Downloading video…' })
+        onProgress({ progress: 0.15 + fraction * 0.8, message: 'Завантажую відео…' })
       } else if (line.includes('[Merger]')) {
-        onProgress({ progress: 0.96, message: 'Merging streams…' })
+        onProgress({ progress: 0.96, message: 'Об’єдную потоки…' })
       }
     }
   )

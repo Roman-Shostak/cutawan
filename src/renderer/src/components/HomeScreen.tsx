@@ -17,7 +17,7 @@ import {
   ZoomIn
 } from 'lucide-react'
 import { useStore } from '../store'
-import { formatDuration, formatBytes } from '../lib/format'
+import { formatDuration, formatBytes, pluralUk } from '../lib/format'
 import MissingSourceBanner from './MissingSourceBanner'
 import DiscoverySummary from './DiscoverySummary'
 import { EditorialRankingSummary } from './EditorialSummary'
@@ -36,7 +36,7 @@ import { isChromiumBrowser } from '@shared/cookies'
 import { isVideoFile } from '@shared/video'
 
 const COOKIE_BROWSERS: Array<{ value: BrowserCookieSource; label: string }> = [
-  { value: '', label: 'No login' },
+  { value: '', label: 'Без входу' },
   { value: 'chrome', label: 'Chrome' },
   { value: 'edge', label: 'Edge' },
   { value: 'firefox', label: 'Firefox' },
@@ -49,7 +49,7 @@ const COOKIE_BROWSERS: Array<{ value: BrowserCookieSource; label: string }> = [
 ]
 
 const LENGTH_OPTIONS: Array<{ value: ClipLengthPreference; label: string; hint: string }> = [
-  { value: 'auto', label: 'Auto', hint: 'AI decides' },
+  { value: 'auto', label: 'Auto', hint: 'Вирішує ШІ' },
   { value: 'short', label: 'Short', hint: '15–30s' },
   { value: 'medium', label: 'Medium', hint: '30–60s' },
   { value: 'long', label: 'Long', hint: '60–90s' }
@@ -90,12 +90,12 @@ function ImportHero(): React.JSX.Element {
     const file = e.dataTransfer.files[0]
     if (!file) return
     if (!isVideoFile(file.name)) {
-      setPipelineError(`"${file.name}" is not a supported video file (MP4, MOV, MKV, WEBM and more).`)
+      setPipelineError(`"${file.name}" — непідтримуваний формат відео (підходять MP4, MOV, MKV, WEBM та інші).`)
       return
     }
     const path = window.cutawan.pathForFile(file)
     if (!path) {
-      setPipelineError('Could not read that file from disk. Try choosing it instead.')
+      setPipelineError('Не вдалося прочитати файл з диска. Спробуйте вибрати його через вікно вибору.')
       return
     }
     setBusy(true)
@@ -105,14 +105,13 @@ function ImportHero(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center pb-4 pt-8 text-center">
       <h1 className="max-w-2xl text-4xl font-bold leading-tight tracking-tight">
-        Turn long videos into{' '}
+        Перетворюйте довгі відео на{' '}
         <span className="bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
-          compelling clips
+          яскраві кліпи
         </span>
       </h1>
       <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-zinc-400">
-        Drop in a podcast, webinar or stream. Cutawan transcribes it, finds the best moments
-        with AI, ranks them for editorial quality and renders caption-burned vertical clips.
+        Закиньте подкаст, вебінар чи стрім. Cutawan розпізнає мову, знаходить найкращі моменти за допомогою ШІ, оцінює їх і рендерить вертикальні кліпи з вшитими субтитрами.
       </p>
 
       {pipelineError && (
@@ -149,12 +148,12 @@ function ImportHero(): React.JSX.Element {
         </div>
         <div className="text-[15px] font-semibold">
           {busy
-            ? 'Reading video…'
+            ? 'Читаю відео…'
             : dragOver
-              ? 'Drop the video to start'
-              : 'Drag a video here, or click to choose'}
+              ? 'Відпустіть відео, щоб почати'
+              : 'Перетягніть відео сюди або натисніть, щоб вибрати'}
         </div>
-        <div className="text-xs text-zinc-500">MP4, MOV, MKV, WEBM and more</div>
+        <div className="text-xs text-zinc-500">MP4, MOV, MKV, WEBM та інші</div>
       </button>
 
       <div className="mt-4 w-full max-w-xl">
@@ -190,7 +189,7 @@ function ImportHero(): React.JSX.Element {
               <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="…or paste a YouTube / Vimeo / TikTok / Twitch URL"
+                placeholder="…або вставте посилання з YouTube / Vimeo / TikTok / Twitch"
                 className="min-w-0 flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none"
               />
               <button
@@ -198,7 +197,7 @@ function ImportHero(): React.JSX.Element {
                 disabled={!canSubmitUrl}
                 className="shrink-0 rounded-xl bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-900 transition hover:bg-white disabled:opacity-40"
               >
-                Import
+                Імпорт
               </button>
             </form>
             <CookieBrowserPicker />
@@ -224,8 +223,7 @@ function CookieBrowserPicker(): React.JSX.Element | null {
     <div className="mt-2 space-y-2 px-1 text-left">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[11px] leading-relaxed text-zinc-500">
-          Video needs a login (private or company SSO, e.g. enterprise Vimeo)? Sign in to the site
-          in your browser, then borrow that login:
+          Відео потребує входу (приватне чи корпоративний SSO, наприклад Vimeo для бізнесу)? Увійдіть на сайт у браузері й використайте цей вхід:
         </span>
         <select
           value={settings.importCookiesBrowser}
@@ -246,21 +244,20 @@ function CookieBrowserPicker(): React.JSX.Element | null {
           isChromiumBrowser(settings.importCookiesBrowser) &&
           !settings.hasImportCookiesFile && (
             <p className="w-full rounded-lg bg-amber-500/10 px-2.5 py-2 text-amber-300">
-              On Windows, Chrome and Edge cookies cannot be read by other apps. Use{' '}
-              <strong>Import cookies file</strong> below (Get cookies.txt LOCALLY extension), or pick
-              Firefox in the list.
+              У Windows кукі Chrome та Edge недоступні іншим програмам. Скористайтеся кнопкою{' '}
+              <strong>Імпортувати файл кукі</strong> нижче (розширення Get cookies.txt LOCALLY) або виберіть у списку Firefox.
             </p>
           )}
-        <span>Chromium browsers lock cookies while open. If that fails, import a cookies file instead:</span>
+        <span>Браузери на Chromium блокують кукі, поки відкриті. Якщо не вийде, імпортуйте файл кукі:</span>
         {settings.hasImportCookiesFile ? (
           <>
-            <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-300">cookies.txt loaded</span>
+            <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-300">cookies.txt завантажено</span>
             <button
               type="button"
               onClick={() => void clearCookiesFile()}
               className="rounded-md border border-surface-600 px-2 py-0.5 text-zinc-300 transition hover:bg-surface-800"
             >
-              Remove
+              Прибрати
             </button>
           </>
         ) : (
@@ -269,7 +266,7 @@ function CookieBrowserPicker(): React.JSX.Element | null {
             onClick={() => void importCookiesFile()}
             className="rounded-md border border-surface-600 px-2 py-0.5 text-zinc-300 transition hover:bg-surface-800"
           >
-            Import cookies file
+            Імпортувати файл кукі
           </button>
         )}
       </div>
@@ -316,12 +313,12 @@ function SetupPanel(): React.JSX.Element {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            {mode === 'clips' ? 'Set up your clips' : 'Caption your video'}
+            {mode === 'clips' ? 'Налаштуйте кліпи' : 'Субтитри для відео'}
           </h1>
           <p className="mt-1 text-sm text-zinc-400">
             {mode === 'clips'
-              ? 'Tell the AI what to look for, then generate clips.'
-              : 'No clip finding — the whole video, cropped vertical and captioned.'}
+              ? 'Підкажіть ШІ, що шукати, і створіть кліпи.'
+              : 'Без пошуку кліпів — усе відео, обрізане вертикально й із субтитрами.'}
           </p>
         </div>
         {mode === 'clips' && highlights.length > 0 && (
@@ -329,7 +326,7 @@ function SetupPanel(): React.JSX.Element {
             onClick={() => void openProject(project.id)}
             className="shrink-0 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
           >
-            View current {highlights.length} clips →
+            Переглянути поточні кліпи ({highlights.length}) →
           </button>
         )}
       </div>
@@ -368,7 +365,7 @@ function SetupPanel(): React.JSX.Element {
             }}
             className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500 transition hover:text-red-400"
           >
-            <Trash2 size={13} /> Delete this project
+            <Trash2 size={13} /> Видалити цей проєкт
           </button>
         </div>
 
@@ -381,11 +378,10 @@ function SetupPanel(): React.JSX.Element {
               <label className="flex items-start gap-3 text-sm font-semibold">
                 <input type="checkbox" checked={editorialRanking} onChange={e => setEditorialRanking(e.target.checked)}
                   className="mt-1" data-testid="editorial-ranking-toggle" />
-                <span>Review and rank complete stories <span className="font-normal text-zinc-400">(beta)</span>
+                <span>Перевіряти й ранжувати цілісні історії <span className="font-normal text-zinc-400">(бета)</span>
                   <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-400">
-                    Check context, payoff and repeated ideas using source text and sampled frames.
-                    Up to {EDITORIAL_BUDGET.maxReviewCalls + EDITORIAL_BUDGET.maxDiversityCalls} extra analysis calls plus provider retries.
-                    {' '}Scores are model judgements; watch the clips before exporting.
+                    Перевіряє контекст, розв’язку та повтори ідей за текстом і вибірковими кадрами. До {EDITORIAL_BUDGET.maxReviewCalls + EDITORIAL_BUDGET.maxDiversityCalls} додаткових запитів на аналіз плюс повторні спроби провайдера.
+                    {' '}Оцінки — це судження моделі; переглядайте кліпи перед експортом.
                   </span>
                 </span>
               </label>
@@ -395,12 +391,11 @@ function SetupPanel(): React.JSX.Element {
               <label className="flex items-start gap-3 text-sm font-semibold">
                 <input type="checkbox" checked={visualDiscovery} onChange={e => setVisualDiscovery(e.target.checked)}
                   className="mt-1" data-testid="visual-discovery-toggle" />
-                <span>Find visual moments <span className="font-normal text-zinc-400">(beta)</span>
+                <span>Шукати візуальні моменти <span className="font-normal text-zinc-400">(бета)</span>
                   <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-400">
-                    Look for demonstrations, reveals and reactions, including footage without speech.
-                    Samples frames across the video through your configured AI connection, with up to {SOURCE_DISCOVERY_BUDGET.maxAnalysisRequests} extra
-                    {' '}analysis calls plus any provider retries. Brief events between samples may be missed.
-                    {' '}Reviewing and framing the resulting clips uses additional calls.
+                    Шукає демонстрації, розкриття та реакції, зокрема фрагменти без мови. Аналізує кадри з усього відео через ваше підключення до ШІ — до {SOURCE_DISCOVERY_BUDGET.maxAnalysisRequests} додаткових
+                    {' '}запитів на аналіз плюс повторні спроби провайдера. Короткі події між кадрами можуть бути пропущені.
+                    {' '}Перевірка й кадрування знайдених кліпів потребує додаткових запитів.
                   </span>
                 </span>
               </label>
@@ -409,12 +404,12 @@ function SetupPanel(): React.JSX.Element {
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Wand2 size={15} className="text-accent-400" />
-                AI instructions <span className="font-normal text-zinc-500">(optional)</span>
+                Інструкції для ШІ <span className="font-normal text-zinc-500">(необов’язково)</span>
               </label>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={'e.g. "Focus on the moments about pricing strategy" or "Find the funniest exchanges between the hosts"'}
+                placeholder={'напр. «Шукай смішні моменти, фейли й епічні кілли» або «Зосередься на емоційних реакціях»'}
                 rows={3}
                 className="mt-3 w-full resize-none rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none"
               />
@@ -428,11 +423,10 @@ function SetupPanel(): React.JSX.Element {
                 <span className="min-w-0">
                   <span className="flex items-center gap-2 text-sm font-semibold">
                     <ImagePlus size={15} className="text-accent-400" />
-                    AI B-roll images
+                    ШІ-вставки зображень (B-roll)
                   </span>
                   <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
-                    When you mention a character, person or place ("Yoda"), a matching image pops
-                    over the video at that exact word. Every insert is editable per clip.
+                    Коли ви згадуєте персонажа, людину чи місце («Йода»), відповідне зображення з’являється поверх відео саме на цьому слові. Кожну вставку можна змінити в кліпі.
                   </span>
                 </span>
                 <span
@@ -453,12 +447,10 @@ function SetupPanel(): React.JSX.Element {
                 <span className="min-w-0">
                   <span className="flex items-center gap-2 text-sm font-semibold">
                     <Zap size={15} className="text-accent-400" />
-                    Open on the hook
+                    Починати з гачка
                   </span>
                   <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
-                    Finds each clip&apos;s hook line and trims the start so the video opens on that
-                    moment instead of throat-clearing. You can still turn on the hook title card per
-                    clip in the editor.
+                    Знаходить у кожному кліпі фразу-гачок і обрізає початок, щоб відео стартувало з неї, а не з розгону. Заголовок-гачок можна окремо ввімкнути для кожного кліпу в редакторі.
                   </span>
                 </span>
                 <span
@@ -474,11 +466,10 @@ function SetupPanel(): React.JSX.Element {
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Film size={15} className="text-accent-400" />
-                What kind of video is this?
+                Що це за відео?
               </label>
               <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                Helps Cutawan pick the right 9:16 layout — crop and zoom for talking heads,
-                letterbox for screen recordings.
+                Допомагає Cutawan вибрати компонування 9:16: кроп і зум для людини в кадрі, поля для записів екрана.
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {VIDEO_TYPE_OPTIONS.map((opt) => (
@@ -502,7 +493,7 @@ function SetupPanel(): React.JSX.Element {
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Clock size={15} className="text-accent-400" />
-                Preferred clip length
+                Бажана довжина кліпу
               </label>
               <div className="mt-3 grid grid-cols-4 gap-2">
                 {LENGTH_OPTIONS.map((opt) => (
@@ -546,7 +537,7 @@ function SetupPanel(): React.JSX.Element {
               onClick={() => setSettingsOpen(true)}
               className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/15 px-5 py-3.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/25"
             >
-              {settings?.subscription.provider === 'openrouter' ? 'Add your OpenRouter key first' : 'Add your OpenAI API key first'}
+              {settings?.subscription.provider === 'openrouter' ? 'Спочатку додайте ключ OpenRouter' : 'Спочатку додайте API-ключ'}
             </button>
           ) : (
             <div>
@@ -566,20 +557,20 @@ function SetupPanel(): React.JSX.Element {
                 {mode === 'clips' ? (
                   <>
                     <Sparkles size={17} />
-                    {highlights.length > 0 ? 'Regenerate clips' : 'Get clips'}
+                    {highlights.length > 0 ? 'Згенерувати кліпи заново' : 'Отримати кліпи'}
                   </>
                 ) : (
                   <>
                     <Captions size={17} />
                     {findWholeVideoClip(project)
-                      ? 'Redo the captioned video'
-                      : 'Transcribe and caption'}
+                      ? 'Переробити відео з субтитрами'
+                      : 'Розпізнати й додати субтитри'}
                   </>
                 )}
               </button>
               {project.transcript && (
                 <p className="mt-2 text-center text-[11px] text-zinc-500">
-                  Transcript already saved — this skips transcription. Clip analysis may still take time.
+                  Розшифровка вже збережена — розпізнавання пропускається. Аналіз кліпів усе ще може зайняти час.
                 </p>
               )}
             </div>
@@ -601,14 +592,14 @@ function ModeSwitcher({
   const options: Array<{ value: ProjectMode; label: string; hint: string; icon: React.ElementType }> = [
     {
       value: 'clips',
-      label: 'Find clips',
-      hint: 'AI cuts the best moments out',
+      label: 'Знайти кліпи',
+      hint: 'ШІ вирізає найкращі моменти',
       icon: Sparkles
     },
     {
       value: 'whole-video',
-      label: 'Caption whole video',
-      hint: 'Vertical crop and captions, end to end',
+      label: 'Субтитри на все відео',
+      hint: 'Вертикальний кроп і субтитри від початку до кінця',
       icon: Captions
     }
   ]
@@ -681,8 +672,8 @@ function ToggleCard({
 
 const CAPTION_ASPECTS: Array<{ value: AspectRatio; label: string; hint: string }> = [
   { value: '9:16', label: '9:16', hint: 'TikTok, Reels, Shorts' },
-  { value: '1:1', label: '1:1', hint: 'Square feed posts' },
-  { value: 'original', label: 'Original', hint: 'Keep the source shape' }
+  { value: '1:1', label: '1:1', hint: 'Квадратні пости у стрічку' },
+  { value: 'original', label: 'Original', hint: 'Зберегти вихідні пропорції' }
 ]
 
 /**
@@ -716,11 +707,10 @@ function CaptionVideoOptions({
       <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
         <label className="flex items-center gap-2 text-sm font-semibold">
           <Crop size={15} className="text-accent-400" />
-          Output shape
+          Формат результату
         </label>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          A 16:9 source is cropped to fit. You can switch to letterbox fit, or nudge the crop, in
-          the editor.
+          Джерело 16:9 обрізається під формат. У редакторі можна перейти на вписування з полями або зсунути кроп.
         </p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {CAPTION_ASPECTS.map((opt) => (
@@ -743,20 +733,16 @@ function CaptionVideoOptions({
 
       <ToggleCard
         icon={ScanFace}
-        title="Follow the speaker"
+        title="Стежити за мовцем"
         checked={followSpeaker}
         onChange={onFollowSpeaker}
       >
-        Tracks who is actually talking and keeps the crop on them, cutting between speakers like a
-        camera switch. Runs on your machine, and it is slow: roughly {trackingMinutes} minute
-        {trackingMinutes === 1 ? '' : 's'} for this video. Leave it off for a fixed crop you set
-        with the focus slider.
+        Відстежує, хто саме говорить, і тримає кроп на ньому, перемикаючись між мовцями, як камери. Працює на вашому комп’ютері і повільно: приблизно {trackingMinutes}{' '}
+        {pluralUk(trackingMinutes, 'хвилина', 'хвилини', 'хвилин')} для цього відео. Вимкніть для фіксованого кропу, який задаєте повзунком фокуса.
       </ToggleCard>
 
-      <ToggleCard icon={ZoomIn} title="Auto zoom" checked={autoZoom} onChange={onAutoZoom}>
-        Punch-ins on the most energetic lines and a slow creep over static stretches, so the frame
-        never sits still. Off by default; you can toggle it in the editor and see it in the
-        preview.
+      <ToggleCard icon={ZoomIn} title="Автозум" checked={autoZoom} onChange={onAutoZoom}>
+        Різкі наближення на найемоційніших фразах і плавний наїзд на статичних ділянках, щоб кадр не застигав. За замовчуванням вимкнено; можна ввімкнути в редакторі й побачити в превʼю.
       </ToggleCard>
     </>
   )
@@ -774,7 +760,7 @@ function RecentProjects(): React.JSX.Element | null {
   return (
     <div className="mt-10">
       <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-        Recent projects
+        Нещодавні проєкти
       </h2>
       <div className="mt-4 grid grid-cols-3 gap-4">
         {others.map((p) => (
@@ -801,8 +787,8 @@ function RecentProjects(): React.JSX.Element | null {
                 <div className="mt-0.5 text-xs text-zinc-500">
                   {formatDuration(p.durationSec)} ·{' '}
                   {p.mode === 'whole-video'
-                    ? 'captioned video'
-                    : `${p.clipCount} clip${p.clipCount === 1 ? '' : 's'}`}
+                    ? 'відео з субтитрами'
+                    : `${p.clipCount} ${pluralUk(p.clipCount, 'кліп', 'кліпи', 'кліпів')}`}
                 </div>
               </div>
               <button

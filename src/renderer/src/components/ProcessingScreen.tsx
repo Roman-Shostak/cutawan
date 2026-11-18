@@ -10,19 +10,19 @@ interface StageRow {
 }
 
 const CLIP_STAGES: StageRow[] = [
-  { id: 'audio', label: 'Extract audio', icon: FileAudio },
-  { id: 'transcribe', label: 'Transcribe speech', icon: AudioLines },
-  { id: 'analyze', label: 'Find and review moments', icon: Brain },
-  { id: 'broll', label: 'Find B-roll images', icon: ImagePlus },
-  { id: 'thumbnails', label: 'Create thumbnails', icon: Image }
+  { id: 'audio', label: 'Витягнути аудіо', icon: FileAudio },
+  { id: 'transcribe', label: 'Розпізнати мову', icon: AudioLines },
+  { id: 'analyze', label: 'Знайти й оцінити моменти', icon: Brain },
+  { id: 'broll', label: 'Знайти зображення для вставок', icon: ImagePlus },
+  { id: 'thumbnails', label: 'Створити мініатюри', icon: Image }
 ]
 
 /** Captioning the whole video: no highlight detection, no B-roll. */
 const WHOLE_VIDEO_STAGES: StageRow[] = [
-  { id: 'audio', label: 'Extract audio', icon: FileAudio },
-  { id: 'transcribe', label: 'Transcribe speech', icon: AudioLines },
-  { id: 'reframe', label: 'Follow the speaker', icon: ScanFace },
-  { id: 'thumbnails', label: 'Finish up', icon: Image }
+  { id: 'audio', label: 'Витягнути аудіо', icon: FileAudio },
+  { id: 'transcribe', label: 'Розпізнати мову', icon: AudioLines },
+  { id: 'reframe', label: 'Стежити за мовцем', icon: ScanFace },
+  { id: 'thumbnails', label: 'Завершення', icon: Image }
 ]
 
 const STAGE_ORDER: PipelineStage[] = ['probe', 'audio', 'transcribe', 'analyze', 'reframe', 'broll', 'thumbnails', 'done']
@@ -48,7 +48,7 @@ export default function ProcessingScreen(): React.JSX.Element {
       <div className="w-full max-w-md">
         <div className="text-center">
           <div className="text-lg font-semibold tracking-tight">{project?.name}</div>
-          <div className="mt-1 text-sm text-zinc-500">{progress?.message ?? 'Working…'}</div>
+          <div className="mt-1 text-sm text-zinc-500">{progress?.message ?? 'Працюю…'}</div>
         </div>
 
         <div className="mt-8 h-2 overflow-hidden rounded-full bg-surface-700">
@@ -106,32 +106,28 @@ export default function ProcessingScreen(): React.JSX.Element {
           className="mx-auto mt-8 flex items-center gap-1.5 rounded-lg border border-surface-600 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"
         >
           <X size={14} />
-          {cancelling ? 'Cancelling…' : 'Cancel'}
+          {cancelling ? 'Скасовую…' : 'Скасувати'}
         </button>
 
         <p className="mt-6 text-center text-xs leading-relaxed text-zinc-600">
           {mode === 'whole-video' ? (
             <>
               {settings?.subscription.provider === 'chatgpt' || settings?.subscription.localTranscription
-                ? 'Speech is transcribed locally. '
+                ? 'Мова розпізнається локально. '
                 : settings?.subscription.provider === 'openrouter'
-                  ? 'Only the audio leaves your machine, for transcription through OpenRouter. '
-                  : 'Only the audio leaves your machine, for Whisper transcription. '}Long videos are
-              transcribed in chunks and the transcript is saved as soon as it lands, so redoing
-              this skips straight past it.
-              {followSpeaker && ' Speaker tracking runs locally and is the slow part.'}
+                  ? 'З комп’ютера передається лише аудіо — для розпізнавання через OpenRouter. '
+                  : 'З комп’ютера передається лише аудіо — для розпізнавання Whisper. '}Довгі відео розпізнаються частинами, а розшифровка зберігається одразу, тож повторний запуск цей крок пропустить.
+              {followSpeaker && ' Відстеження мовця працює локально — це найповільніша частина.'}
             </>
           ) : (
             <>
               {settings?.subscription.provider === 'chatgpt'
-                ? 'Speech is transcribed locally; transcript text and sampled frames go to Codex for analysis. '
+                ? 'Мова розпізнається локально; текст розшифровки й вибіркові кадри йдуть у Codex на аналіз. '
                 : settings?.subscription.localTranscription
-                  ? 'Speech is transcribed locally; analysis uses your configured API. '
+                  ? 'Мова розпізнається локально; аналіз — через ваш налаштований API. '
                   : settings?.subscription.provider === 'openrouter'
-                    ? 'Transcription and analysis go through OpenRouter. '
-                    : 'Transcription and analysis use your configured API. '}Long videos are transcribed in
-              chunks. Local speech recognition can take longer on a CPU. The transcript is saved
-              as soon as it completes, so retries and regenerations skip straight to analysis.
+                    ? 'Розпізнавання й аналіз ідуть через OpenRouter. '
+                    : 'Розпізнавання й аналіз — через ваш налаштований API. '}Довгі відео розпізнаються частинами. Локальне розпізнавання на CPU може тривати довше. Розшифровка зберігається одразу після завершення, тож повторні запуски одразу переходять до аналізу.
             </>
           )}
         </p>

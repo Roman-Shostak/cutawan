@@ -66,7 +66,7 @@ it('creates a private environment and downloads only the selected model', async 
       expect.objectContaining({ shell: false }))
     expect(downloadCall()).toContain('small')
     expect(downloadCall()).not.toContain('--mlx')
-    expect(progress).toHaveBeenCalledWith({ progress: 1, message: 'Local Whisper is ready.' })
+    expect(progress).toHaveBeenCalledWith({ progress: 1, message: 'Локальний Whisper готовий.' })
   } finally { restore() }
 })
 

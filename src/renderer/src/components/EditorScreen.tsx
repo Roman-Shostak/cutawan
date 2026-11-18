@@ -47,7 +47,7 @@ const ASPECTS: Array<{ value: AspectRatio; label: string }> = [
   { value: '9:16', label: '9:16' },
   { value: '1:1', label: '1:1' },
   { value: '16:9', label: '16:9' },
-  { value: 'original', label: 'Original' }
+  { value: 'original', label: 'Оригінал' }
 ]
 
 export default function EditorScreen(): React.JSX.Element {
@@ -158,7 +158,7 @@ export default function EditorScreen(): React.JSX.Element {
               className="w-full text-ellipsis rounded-lg border border-transparent bg-transparent px-1 py-0.5 text-[15px] font-semibold focus:border-surface-600 focus:bg-surface-850 focus:outline-none"
             />
             <p className="mt-1 px-1 text-xs leading-relaxed text-zinc-500">
-              {wholeVideo ? 'The whole video. The title names the exported file.' : clip.summary}
+              {wholeVideo ? 'Усе відео. Назва стане іменем експортованого файлу.' : clip.summary}
             </p>
           </div>
           {wholeVideo ? (
@@ -166,7 +166,7 @@ export default function EditorScreen(): React.JSX.Element {
               data-testid="whole-video-badge"
               className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-zinc-400"
             >
-              Full video
+              Усе відео
             </span>
           ) : (
             <EditorialScore clip={clip} current={assessmentCurrent} size="lg" />
@@ -175,7 +175,7 @@ export default function EditorScreen(): React.JSX.Element {
 
         {!wholeVideo && <EditorialExplanation clip={clip} current={assessmentCurrent} />}
 
-        <Section icon={Scissors} title="Trim">
+        <Section icon={Scissors} title="Обрізка">
           <TimelineEditor
             clip={clip}
             windowStart={windowStart}
@@ -192,7 +192,7 @@ export default function EditorScreen(): React.JSX.Element {
           />
           <div className="mt-3">
             <Toggle
-              label="Tighten cuts — remove pauses and filler words"
+              label="Щільний монтаж — прибрати паузи й слова-паразити"
               checked={clip.edit.tightenCuts}
               onChange={(v) => {
                 // Pause removal must not remove the last playable span.
@@ -201,27 +201,26 @@ export default function EditorScreen(): React.JSX.Element {
             />
             {clip.edit.end - clip.edit.start > TIGHTEN_WARN_SEC && (
               <p className="mt-1 text-[10px] leading-relaxed text-zinc-600">
-                Over an edit this long, tightening makes hundreds of cuts and a much slower
-                render.
+                На такому довгому фрагменті щільний монтаж дасть сотні склейок і значно повільніший рендер.
               </p>
             )}
           </div>
           <div className="mt-2">
             <Toggle
-              label="Auto zoom — punch-ins on emphasis, jump zooms covering cuts"
+              label="Автозум — наближення на акцентах і стрибкові зуми на склейках"
               checked={clip.edit.autoZoom ?? false}
               disabled={clip.edit.reframeMode !== 'crop' || automaticLayout}
               onChange={(v) => set({ autoZoom: v })}
             />
             {(clip.edit.reframeMode !== 'crop' || automaticLayout) && (
               <p className="mt-1 text-[10px] leading-relaxed text-zinc-600">
-                {automaticLayout ? 'Automatic composition keeps its checked framing; switch to Manual to add zoom.' : 'Auto zoom is only available with fill (crop) reframing.'}
+                {automaticLayout ? 'Автоматична композиція зберігає перевірене кадрування; перейдіть на «Вручну», щоб додати зум.' : 'Автозум доступний лише з кадруванням «Заповнити (кроп)».'}
               </p>
             )}
           </div>
         </Section>
 
-        <Section icon={Crop} title="Layout">
+        <Section icon={Crop} title="Компонування">
           <div className="grid grid-cols-4 gap-1.5">
             {ASPECTS.map((a) => (
               <button
@@ -243,9 +242,9 @@ export default function EditorScreen(): React.JSX.Element {
               <div className="mt-3 grid grid-cols-3 gap-1.5">
                 {(
                   [
-                    { value: 'crop', label: automaticLayout ? 'Auto layout' : 'Fill (crop)' },
-                    { value: 'fit-letterbox', label: 'Fit (letterbox)' },
-                    { value: 'fit-blur', label: 'Fit + blur' }
+                    { value: 'crop', label: automaticLayout ? 'Авто-компонування' : 'Заповнити (кроп)' },
+                    { value: 'fit-letterbox', label: 'Вписати (поля)' },
+                    { value: 'fit-blur', label: 'Вписати + розмиття' }
                   ] as Array<{ value: ReframeMode; label: string }>
                 ).map((m) => (
                   <button
@@ -263,7 +262,7 @@ export default function EditorScreen(): React.JSX.Element {
               </div>
               {clip.contentType === 'screencast' && clip.edit.reframeMode !== 'crop' && (
                 <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                  The full source frame stays visible in this layout.
+                  У цьому компонуванні видно весь кадр джерела.
                 </p>
               )}
               {reframePending && (
@@ -275,21 +274,20 @@ export default function EditorScreen(): React.JSX.Element {
                     <>
                       <ScanFace size={12} className="shrink-0" />
                       <span>
-                        Speaker framing could not be analysed ({reframeError[clip.id]}).{' '}
+                        Не вдалося проаналізувати кадрування мовця ({reframeError[clip.id]}).{' '}
                         <button
                           type="button"
                           onClick={() => void ensureReframe(clip.id, true)}
                           className="underline decoration-zinc-600 hover:text-zinc-300"
                         >
-                          Retry
+                          Повторити
                         </button>
                       </span>
                     </>
                   ) : (
                     <>
                       <Loader2 size={12} className="shrink-0 animate-spin" />
-                      Preparing framing and content layout… You can keep editing while this
-                      finishes. Layout choices you make now are kept.
+                      Готую кадрування й компонування… Можна редагувати далі, поки це завершується. Вибране зараз компонування збережеться.
                     </>
                   )}
                 </p>
@@ -300,8 +298,8 @@ export default function EditorScreen(): React.JSX.Element {
                     <div className="mt-3 grid grid-cols-2 gap-1.5">
                       {(
                         [
-                          { value: 'auto', label: 'Automatic' },
-                          { value: 'manual', label: 'Manual' }
+                          { value: 'auto', label: 'Автоматично' },
+                          { value: 'manual', label: 'Вручну' }
                         ] as Array<{ value: FramingMode; label: string }>
                       ).map((f) => (
                         <button
@@ -321,19 +319,18 @@ export default function EditorScreen(): React.JSX.Element {
                   )}
                   {automaticLayout ? (
                     <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                      Automatic composition preserves the important content in each shot. Choose Manual to set your own crop, or Fit to show the full source.
+                      Автоматична композиція зберігає важливе в кожному плані. Виберіть «Вручну», щоб задати свій кроп, або «Вписати», щоб показати весь кадр.
                     </p>
                   ) : clip.edit.framing === 'auto' && clip.focusTrack ? (
                     <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-                      Following {clip.focusTrack.length} tracked speaker position
-                      {clip.focusTrack.length === 1 ? '' : 's'} — the crop pans smoothly as the
-                      speaker moves and cuts on camera or speaker changes.
+                      Відстежених позицій мовця: {clip.focusTrack.length} — кроп плавно рухається за мовцем
+                      і перемикається при зміні плану чи мовця.
                     </p>
                   ) : (
                     <div className="mt-3">
                       <div className="mb-1.5 flex justify-between text-[11px] text-zinc-500">
-                        <span>Focus left</span>
-                        <span>Focus right</span>
+                        <span>Фокус ліворуч</span>
+                        <span>Фокус праворуч</span>
                       </div>
                       <input
                         type="range"
@@ -353,9 +350,9 @@ export default function EditorScreen(): React.JSX.Element {
           )}
         </Section>
 
-        <Section icon={Captions} title="Captions">
+        <Section icon={Captions} title="Субтитри">
           <Toggle
-            label="Burn in captions"
+            label="Вшити субтитри"
             checked={clip.edit.captionsEnabled}
             onChange={(v) => set({ captionsEnabled: v })}
           />
@@ -381,7 +378,7 @@ export default function EditorScreen(): React.JSX.Element {
                       color: style.textColor
                     }}
                   >
-                    {style.uppercase ? 'SO I ' : 'so I '}
+                    {style.uppercase ? 'ОТ ЦЕ ' : 'от це '}
                     <span
                       style={{
                         color: style.highlightColor,
@@ -390,7 +387,7 @@ export default function EditorScreen(): React.JSX.Element {
                         padding: style.highlightBoxColor ? '0 3px' : 0
                       }}
                     >
-                      {style.uppercase ? 'SAID' : 'said'}
+                      {style.uppercase ? 'ТАК' : 'так'}
                     </span>
                   </div>
                   <div className="mt-1 text-[11px] text-zinc-500">{preset.name}</div>
@@ -401,7 +398,7 @@ export default function EditorScreen(): React.JSX.Element {
           {clip.edit.captionsEnabled && (
             <div className="mt-3">
               <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
-                <Type size={13} /> Caption font
+                <Type size={13} /> Шрифт субтитрів
               </div>
               {customFonts.length > 0 ? (
                 <select
@@ -409,7 +406,7 @@ export default function EditorScreen(): React.JSX.Element {
                   onChange={(e) => set({ captionFontFamily: e.target.value || null })}
                   className="w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-xs text-zinc-200 focus:border-white/25 focus:outline-none"
                 >
-                  <option value="">Style default</option>
+                  <option value="">Як у стилі</option>
                   {customFonts.map((f) => (
                     <option key={f.fileName} value={f.family}>
                       {f.family}
@@ -418,15 +415,14 @@ export default function EditorScreen(): React.JSX.Element {
                 </select>
               ) : (
                 <p className="text-[11px] leading-relaxed text-zinc-500">
-                  Using the style’s built-in font. Upload your own fonts in Settings → Custom
-                  fonts to pick them here.
+                  Використовується вбудований шрифт стилю. Завантажте власні шрифти в Налаштування → Шрифти, щоб вибрати їх тут.
                 </p>
               )}
             </div>
           )}
           <div className="mt-3">
             <Toggle
-              label="Show hook title at start"
+              label="Показувати заголовок-гачок на початку"
               checked={clip.edit.showTitle}
               onChange={(v) => set({ showTitle: v })}
             />
@@ -434,7 +430,7 @@ export default function EditorScreen(): React.JSX.Element {
           {clip.edit.showTitle && (
             <div className="mt-2.5">
               <div className="mb-1 flex items-center gap-1.5 text-[11px] text-zinc-500">
-                <CaseUpper size={13} /> Hook text
+                <CaseUpper size={13} /> Текст гачка
               </div>
               <input
                 value={clip.hook}
@@ -447,11 +443,10 @@ export default function EditorScreen(): React.JSX.Element {
         </Section>
 
         {!wholeVideo && (
-        <Section icon={ImagePlus} title="B-roll">
+        <Section icon={ImagePlus} title="Вставки (B-roll)">
           {clip.broll.length === 0 ? (
             <p className="text-xs leading-relaxed text-zinc-500">
-              No image inserts for this clip. Enable “AI B-roll images” when generating clips to
-              get keyword-triggered visuals.
+              У цьому кліпі немає вставок зображень. Увімкніть «ШІ-вставки зображень (B-roll)» під час генерації кліпів, щоб отримати візуали за ключовими словами.
             </p>
           ) : (
             <div className="space-y-2">
@@ -478,8 +473,8 @@ export default function EditorScreen(): React.JSX.Element {
                     <div className="mt-1.5 flex gap-1">
                       {(
                         [
-                          { value: 'fullscreen', label: 'Full' },
-                          { value: 'overlay', label: 'Overlay' }
+                          { value: 'fullscreen', label: 'На весь екран' },
+                          { value: 'overlay', label: 'Поверх' }
                         ] as Array<{ value: BrollMode; label: string }>
                       ).map((m) => (
                         <button
@@ -499,7 +494,7 @@ export default function EditorScreen(): React.JSX.Element {
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <button
                       onClick={() => updateBroll(item.id, { enabled: !item.enabled })}
-                      title={item.enabled ? 'Disable this insert' : 'Enable this insert'}
+                      title={item.enabled ? 'Вимкнути цю вставку' : 'Увімкнути цю вставку'}
                       className={`relative h-5 w-9 rounded-full transition ${
                         item.enabled ? 'bg-zinc-100' : 'bg-surface-600'
                       }`}
@@ -512,7 +507,7 @@ export default function EditorScreen(): React.JSX.Element {
                     </button>
                     <button
                       onClick={() => removeBroll(item.id)}
-                      title="Remove this insert"
+                      title="Видалити цю вставку"
                       className="rounded-md p-1 text-zinc-600 transition hover:bg-surface-700 hover:text-red-400"
                     >
                       <Trash2 size={13} />
@@ -525,7 +520,7 @@ export default function EditorScreen(): React.JSX.Element {
         </Section>
         )}
 
-        <Section icon={Quote} title="Transcript">
+        <Section icon={Quote} title="Розшифровка">
           {project.transcript ? (
             <TranscriptEditor
               transcript={project.transcript}
@@ -542,12 +537,12 @@ export default function EditorScreen(): React.JSX.Element {
               }}
             />
           ) : (
-            <p className="text-xs leading-relaxed text-zinc-500">No transcript available.</p>
+            <p className="text-xs leading-relaxed text-zinc-500">Розшифровка недоступна.</p>
           )}
         </Section>
 
         {!wholeVideo && (
-          <Section icon={GalleryVerticalEnd} title="Hashtags">
+          <Section icon={GalleryVerticalEnd} title="Хештеги">
             <div className="flex flex-wrap gap-1.5">
               {clip.hashtags.map((h) => (
                 <span
@@ -579,21 +574,19 @@ export default function EditorScreen(): React.JSX.Element {
           </div>
           {entry?.status === 'done' && entry.downscaled && !capExceeded && (
             <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-              Scaled the frame down so the file would fit
-              {entry.sizeTargetBytes ? ` under ${formatBytes(entry.sizeTargetBytes)}` : ''}.
+              Кадр зменшено, щоб файл вмістився
+              {entry.sizeTargetBytes ? ` у ${formatBytes(entry.sizeTargetBytes)}` : ''}.
             </p>
           )}
           {entry?.status === 'done' && entry.overBudget && !capExceeded && (
             <p className="mt-2 text-[11px] leading-relaxed text-amber-400">
-              This edit is long for the size cap — the picture may look soft. A shorter trim would
-              hold up better.
+              Фрагмент задовгий для ліміту розміру — картинка може бути розмитою. Коротша обрізка виглядатиме краще.
             </p>
           )}
           {capExceeded && (
             <p className="mt-2 text-[11px] leading-relaxed text-amber-400">
-              This export is over your size limit
-              {entry.sizeTargetBytes ? ` (${formatBytes(entry.sizeTargetBytes)})` : ''}. Shorten the
-              clip or raise the cap.
+              Експорт перевищує ваш ліміт розміру
+              {entry.sizeTargetBytes ? ` (${formatBytes(entry.sizeTargetBytes)})` : ''}. Скоротіть кліп або збільште ліміт.
             </p>
           )}
           {entry?.status === 'error' && entry.error && (
@@ -636,23 +629,23 @@ function ShareSection({ clip }: { clip: Clip }): React.JSX.Element {
   }
 
   return (
-    <Section icon={Share2} title="Share">
+    <Section icon={Share2} title="Публікація">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[11px] text-zinc-500">Post caption (AI)</span>
+        <span className="text-[11px] text-zinc-500">Підпис до поста (ШІ)</span>
         <button
           onClick={() => void generate()}
           disabled={busy}
           className="flex items-center gap-1 rounded-md border border-surface-600 px-2 py-1 text-[11px] font-medium text-zinc-300 transition hover:bg-surface-800 disabled:opacity-60"
         >
           {busy ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-          {busy ? 'Writing…' : clip.caption ? 'Regenerate' : 'Generate caption'}
+          {busy ? 'Пишу…' : clip.caption ? 'Regenerate' : 'Згенерувати підпис'}
         </button>
       </div>
       <textarea
         value={clip.caption ?? ''}
         onChange={(e) => updateClipLocal({ ...clip, caption: e.target.value })}
         onBlur={() => void updateClip(clip)}
-        placeholder="Generate a scroll-stopping caption for TikTok / Reels / Shorts, or write your own."
+        placeholder="Згенеруйте чіпкий підпис для TikTok / Reels / Shorts або напишіть свій."
         rows={3}
         className="w-full resize-none rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-xs leading-relaxed text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none"
       />
@@ -664,7 +657,7 @@ function ShareSection({ clip }: { clip: Clip }): React.JSX.Element {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800 disabled:opacity-40"
         >
           {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-          {copied ? 'Copied' : 'Copy caption'}
+          {copied ? 'Copied' : 'Копіювати підпис'}
         </button>
         <a
           href="https://www.tiktok.com/tiktokstudio/upload"
@@ -673,13 +666,11 @@ function ShareSection({ clip }: { clip: Clip }): React.JSX.Element {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
         >
           <ExternalLink size={13} />
-          Open TikTok upload
+          Відкрити завантаження TikTok
         </a>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-        Export the clip, then drop the file into TikTok Studio and paste the caption. TikTok
-        only allows fully public in-app posting for audited web services, so this hand-off is
-        the reliable local route.
+        Експортуйте кліп, перетягніть файл у TikTok Studio й вставте підпис. TikTok дозволяє публікацію напряму лише перевіреним вебсервісам, тож це надійний локальний шлях.
       </p>
     </Section>
   )

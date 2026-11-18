@@ -10,28 +10,28 @@ export interface VideoTypeOption {
 export const VIDEO_TYPE_OPTIONS: VideoTypeOption[] = [
   {
     value: 'auto',
-    label: 'Auto-detect',
-    hint: 'Let Cutawan decide per clip'
+    label: 'Автовизначення',
+    hint: 'Cutawan вирішує для кожного кліпу'
   },
   {
     value: 'talking-head',
-    label: 'Talking head',
-    hint: 'One person to camera'
+    label: 'Людина в кадрі',
+    hint: 'Одна людина говорить у камеру'
   },
   {
     value: 'podcast',
-    label: 'Podcast',
-    hint: 'Studio or remote conversation'
+    label: 'Подкаст',
+    hint: 'Розмова в студії чи онлайн'
   },
   {
     value: 'webinar',
-    label: 'Webinar',
-    hint: 'Slides, faces and screen share'
+    label: 'Вебінар',
+    hint: 'Слайди, обличчя й показ екрана'
   },
   {
     value: 'product-demo',
-    label: 'Product demo',
-    hint: 'Screen recording or walkthrough'
+    label: 'Демо / гра',
+    hint: 'Запис екрана, гра чи огляд'
   }
 ]
 

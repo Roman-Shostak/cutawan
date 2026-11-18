@@ -459,7 +459,7 @@ async function finishSourceUpdate(
   onProgress: (p: ImportProgress) => void
 ): Promise<void> {
   relaunchPending = true
-  onProgress({ progress: 1, message: 'Restarting…' })
+  onProgress({ progress: 1, message: 'Перезапускаю…' })
   // Let the "Restarting…" frame land before swapping. Awaiting the handover
   // keeps a failed relaunch from resolving as success and stranding the
   // renderer on that frame with no way to retry.
@@ -493,7 +493,7 @@ export async function updateFromSource(onProgress: (p: ImportProgress) => void):
       return
     }
 
-    onProgress({ progress: -1, message: 'Checking the local checkout…' })
+    onProgress({ progress: -1, message: 'Перевіряю локальну копію…' })
     const dirty = (await runStep('git', ['status', '--porcelain'], root))
       .split('\n')
       .map((l) => l.trim())
@@ -515,7 +515,7 @@ export async function updateFromSource(onProgress: (p: ImportProgress) => void):
       await runStep('git', ['checkout', '--', 'package-lock.json', 'package.json'], root)
     }
 
-    onProgress({ progress: -1, message: 'Pulling the latest code…' })
+    onProgress({ progress: -1, message: 'Завантажую найновіший код…' })
     const pullOutput = await runStep('git', ['pull', '--ff-only'], root)
     if (isPullNoOp(pullOutput)) {
       throw new Error(
@@ -524,10 +524,10 @@ export async function updateFromSource(onProgress: (p: ImportProgress) => void):
       )
     }
 
-    onProgress({ progress: -1, message: 'Installing dependencies…' })
+    onProgress({ progress: -1, message: 'Встановлюю залежності…' })
     await runStep(npmCmd, ['install', '--no-audit', '--no-fund'], root)
 
-    onProgress({ progress: -1, message: 'Rebuilding the app…' })
+    onProgress({ progress: -1, message: 'Перезбираю програму…' })
     await runStep(npmCmd, ['run', 'build'], root)
 
     await finishSourceUpdate(root, onProgress)

@@ -35,7 +35,7 @@ export default function ClipsScreen(): React.JSX.Element {
   if (!project) return <div />
 
   // The full-video edit is not one of the found clips: it gets its own banner
-  // and is exported from its editor, never swept into "Export all".
+  // and is exported from its editor, never swept into "Експортувати всі".
   const clips = highlightClips(project)
   const wholeVideo = findWholeVideoClip(project)
   const currentRanking = editorialReportMatchesClips(project)
@@ -49,29 +49,29 @@ export default function ClipsScreen(): React.JSX.Element {
           <div>
             <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
               <Sparkles size={20} className="text-accent-400" />
-              {clips.length} clips found
+              Знайдено кліпів: {clips.length}
             </h1>
             <p className="mt-1 text-sm text-zinc-400">
-              {earlierRanking ? 'Saved clips from an earlier run; the latest attempt did not replace them.' : currentRanking ? 'Ordered for complete stories, editorial quality and variety.' : 'Saved AI selections.'}
-              {' '}Review each clip before exporting; scores estimate editorial quality, not audience performance.
+              {earlierRanking ? 'Збережені кліпи з попереднього запуску; остання спроба їх не замінила.' : currentRanking ? 'Впорядковано за цілісністю історії, редакторською якістю й різноманітністю.' : 'Збережені добірки ШІ.'}
+              {' '}Перегляньте кожен кліп перед експортом; оцінки відображають редакторську якість, а не реакцію аудиторії.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={goHome}
               data-testid="regenerate-button"
-              title="Change the AI instructions and generate a new set of clips using the saved transcript"
+              title="Змінити інструкції для ШІ й згенерувати новий набір кліпів зі збереженої розшифровки"
               className="flex items-center gap-2 rounded-xl border border-surface-600 px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-surface-800"
             >
               <RefreshCw size={15} />
-              Regenerate
+              Згенерувати заново
             </button>
             <button
               onClick={() => void chooseExportDir()}
               title={
                 exportDir
-                  ? `Exports go to ${exportDir} — click to change`
-                  : 'Choose the export folder'
+                  ? `Експорт іде в ${exportDir} — натисніть, щоб змінити`
+                  : 'Вибрати папку експорту'
               }
               className="flex items-center gap-2 rounded-xl border border-surface-600 px-3 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-surface-800"
             >
@@ -90,7 +90,7 @@ export default function ClipsScreen(): React.JSX.Element {
               className="flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-black/40 transition hover:bg-white disabled:opacity-60"
             >
               {exportingAll ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              {exportingAll ? `Exporting… (${doneCount}/${clips.length})` : 'Export all'}
+              {exportingAll ? `Експортую… (${doneCount}/${clips.length})` : 'Експортувати всі'}
             </button>
           </div>
         </div>
@@ -126,10 +126,10 @@ function WholeVideoBanner({ clip }: { clip: Clip }): React.JSX.Element {
       <Captions size={16} className="shrink-0 text-accent-400" />
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-zinc-200">
-          Captioned full video ({formatDuration(clip.edit.end - clip.edit.start)})
+          Усе відео з субтитрами ({formatDuration(clip.edit.end - clip.edit.start)})
         </span>
         <span className="mt-0.5 block text-xs text-zinc-500">
-          The whole thing, cropped and captioned. Open it to style and export.
+          Усе відео, обрізане й із субтитрами. Відкрийте, щоб оформити й експортувати.
         </span>
       </span>
       <Pencil size={14} className="shrink-0 text-zinc-500" />
@@ -173,7 +173,7 @@ function ClipCard({ clip, rank }: { clip: Clip; rank: number }): React.JSX.Eleme
         {framing && (
           <span className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-zinc-300 backdrop-blur">
             <Loader2 size={11} className="animate-spin" />
-            Framing…
+            Кадрування…
           </span>
         )}
         <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-zinc-200 backdrop-blur">
@@ -184,10 +184,10 @@ function ClipCard({ clip, rank }: { clip: Clip; rank: number }): React.JSX.Eleme
       <div className="p-4">
         <div className="line-clamp-1 text-sm font-semibold">{clip.title}</div>
         {clip.discovery?.origin === 'visual' && <p className="mt-1 text-xs text-zinc-400">
-          Found from visual evidence · review the complete action before exporting
+          Знайдено за візуалом · перегляньте всю дію перед експортом
         </p>}
         {layoutReviewMessage(clip) && (
-          <p className="mt-1 text-xs text-amber-300" title={layoutReviewMessage(clip)!}>Review layout</p>
+          <p className="mt-1 text-xs text-amber-300" title={layoutReviewMessage(clip)!}>Перевірити компонування</p>
         )}
         <p className="mt-1.5 line-clamp-2 min-h-[2.2rem] text-xs leading-relaxed text-zinc-500">
           {clip.summary}
@@ -202,7 +202,7 @@ function ClipCard({ clip, rank }: { clip: Clip; rank: number }): React.JSX.Eleme
             onClick={() => openEditor(clip.id)}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-surface-600 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-surface-800"
           >
-            <Pencil size={13} /> Edit
+            <Pencil size={13} /> Редагувати
           </button>
           <ExportButton
             status={entry?.status}
@@ -250,7 +250,7 @@ export function ExportButton({
         <span className="relative tabular-nums">{Math.round(progress * 100)}%</span>
         <button
           onClick={onCancel}
-          title="Cancel this export"
+          title="Скасувати цей експорт"
           className="relative rounded p-0.5 text-zinc-400 transition hover:bg-surface-600 hover:text-red-400"
         >
           <X size={13} />
@@ -266,11 +266,11 @@ export function ExportButton({
         className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 px-3 py-2 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/25"
         title={
           downscaled
-            ? `${outputPath} — scaled down to fit the size limit`
+            ? `${outputPath} — зменшено під ліміт розміру`
             : outputPath
         }
       >
-        <Check size={13} /> Saved{sizeLabel}
+        <Check size={13} /> Збережено{sizeLabel}
         <FolderOpen size={13} />
       </button>
     )
@@ -282,7 +282,7 @@ export function ExportButton({
         className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/25"
         title={error}
       >
-        <AlertTriangle size={13} /> Retry
+        <AlertTriangle size={13} /> Повторити
       </button>
     )
   }
@@ -291,7 +291,7 @@ export function ExportButton({
       onClick={onExport}
       className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-900 transition hover:bg-white"
     >
-      <Download size={13} /> Export
+      <Download size={13} /> Експорт
     </button>
   )
 }

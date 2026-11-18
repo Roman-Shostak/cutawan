@@ -113,7 +113,7 @@ async function analyseAndPersist(
   }
   if (project.sourceMissing) {
     throw new Error(
-      `The source video is missing (${project.video.path}). Relink it before framing this clip.`
+      `Вихідне відео не знайдено (${project.video.path}). Вкажіть його знову перед кадруванням цього кліпу.`
     )
   }
 

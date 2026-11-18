@@ -109,7 +109,7 @@ export default function TranscriptEditor({
   }
 
   if (words.length === 0) {
-    return <p className="text-xs leading-relaxed text-zinc-500">No speech in this range.</p>
+    return <p className="text-xs leading-relaxed text-zinc-500">У цьому фрагменті немає мови.</p>
   }
 
   const selDuration = range
@@ -167,8 +167,8 @@ export default function TranscriptEditor({
               }}
               title={
                 w.text
-                  ? 'Click to seek · drag to select · double-click to edit'
-                  : 'Hidden from captions — double-click to restore'
+                  ? 'Клік — перейти · потягнути — виділити · подвійний клік — редагувати'
+                  : 'Приховано із субтитрів — подвійний клік, щоб повернути'
               }
               className={`rounded px-0.5 transition hover:text-zinc-100 ${
                 selected
@@ -196,21 +196,21 @@ export default function TranscriptEditor({
             className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-900 transition hover:bg-white"
           >
             <Scissors size={12} />
-            Trim clip to selection ({formatTimecode(selDuration)})
+            Обрізати кліп до виділення ({formatTimecode(selDuration)})
           </button>
           {onCut && (
             <button
               onClick={cutSelection}
-              title="Remove these words from the clip (Delete)"
+              title="Прибрати ці слова з кліпу (Delete)"
               className="flex items-center gap-1.5 rounded-lg border border-surface-600 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 transition hover:bg-surface-700"
             >
               <Trash2 size={12} />
-              Cut selection
+              Вирізати виділене
             </button>
           )}
           <button
             onClick={() => setSelection(null)}
-            title="Clear selection"
+            title="Зняти виділення"
             className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-surface-700 hover:text-zinc-200"
           >
             <X size={13} />
@@ -218,8 +218,7 @@ export default function TranscriptEditor({
         </div>
       ) : (
         <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
-          Click a word to jump there · drag across words to trim to them or cut them · double-click
-          to fix the transcription (clear a word to hide it from captions).
+          Клік на слово — перейти до нього · потягніть по словах, щоб обрізати до них або вирізати · подвійний клік — виправити розшифровку (очистіть слово, щоб приховати його із субтитрів).
         </p>
       )}
     </div>

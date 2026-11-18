@@ -14,7 +14,7 @@ function typing(target: EventTarget | null): boolean {
   return Boolean(el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)))
 }
 
-const SHORTCUTS = 'Space/K play · J/L ±1 s · ←/→ frame · I/O in/out · S split · Delete cut piece · ⌘Z undo'
+const SHORTCUTS = 'Пробіл/K відтворення · J/L ±1 с · ←/→ кадр · I/O початок/кінець · S розрізати · Delete вирізати шматок · ⌘Z скасувати'
 
 /**
  * Timeline editing on top of the trim bar: razor splits, ripple-deleting a
@@ -139,21 +139,21 @@ export default function TimelineEditor({ clip, windowStart, windowEnd, fps, time
         }}
       />
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <button type="button" className={button} onClick={split} title="Split at playhead (S or ⌘K)">
-          <SplitSquareHorizontal size={12} /> Split
+        <button type="button" className={button} onClick={split} title="Розрізати в позиції курсора (S або ⌘K)">
+          <SplitSquareHorizontal size={12} /> Розрізати
         </button>
-        <button type="button" className={button} onClick={cutSelected} disabled={!selection} title="Cut the selected piece (Delete)">
-          <Trash2 size={12} /> Cut piece
+        <button type="button" className={button} onClick={cutSelected} disabled={!selection} title="Вирізати вибраний шматок (Delete)">
+          <Trash2 size={12} /> Вирізати шматок
         </button>
-        <button type="button" className={button} onClick={() => void undo(clip.id)} disabled={!canUndo} title="Undo (⌘Z)">
-          <Undo2 size={12} /> Undo
+        <button type="button" className={button} onClick={() => void undo(clip.id)} disabled={!canUndo} title="Скасувати (⌘Z)">
+          <Undo2 size={12} /> Скасувати
         </button>
-        <button type="button" className={button} onClick={() => void redo(clip.id)} disabled={!canRedo} title="Redo (⇧⌘Z)">
-          <Redo2 size={12} /> Redo
+        <button type="button" className={button} onClick={() => void redo(clip.id)} disabled={!canRedo} title="Повторити (⇧⌘Z)">
+          <Redo2 size={12} /> Повторити
         </button>
         {(edit.cuts?.length ?? 0) > 0 && (
           <span className="flex items-center gap-1 text-[11px] text-zinc-500">
-            <Scissors size={11} /> {edit.cuts!.length} cut{edit.cuts!.length === 1 ? '' : 's'}
+            <Scissors size={11} /> вирізано: {edit.cuts!.length}
           </span>
         )}
       </div>

@@ -6,11 +6,11 @@ export interface TimelineMark { range: TimeRange; kind: 'auto' | 'restored' | 'c
 
 const MARK_STYLE: Record<TimelineMark['kind'], { className: string; title: string }> = {
   auto: { className: 'bg-[repeating-linear-gradient(135deg,rgba(0,0,0,.7)_0_4px,rgba(255,255,255,.18)_4px_7px)]',
-    title: 'Pause removed automatically — click to keep it' },
+    title: 'Паузу прибрано автоматично — натисніть, щоб залишити' },
   restored: { className: 'border-x-2 border-dashed border-sky-300/80 bg-sky-300/10',
-    title: 'Pause kept — click to remove it again' },
+    title: 'Паузу залишено — натисніть, щоб знову прибрати' },
   cut: { className: 'bg-[repeating-linear-gradient(135deg,rgba(127,29,29,.8)_0_4px,rgba(248,113,113,.35)_4px_7px)]',
-    title: 'Cut — click to put it back' }
+    title: 'Вирізано — натисніть, щоб повернути' }
 }
 import { formatTimecode } from '../lib/format'
 import { usePreviewBus } from '../lib/previewBus'
@@ -218,12 +218,12 @@ export default function TrimBar({
         </div>
       </div>
       <div className="mt-1.5 flex justify-between text-[11px] tabular-nums text-zinc-500">
-        <span>In {formatTimecode(start)}</span>
+        <span>Початок {formatTimecode(start)}</span>
         <span className="font-medium text-zinc-400">
-          {formatTimecode(end - start)} long
-          {playsFor !== undefined && Math.abs(playsFor - (end - start)) > 0.05 && ` · plays ${formatTimecode(playsFor)}`}
+          {formatTimecode(end - start)} тривалість
+          {playsFor !== undefined && Math.abs(playsFor - (end - start)) > 0.05 && ` · відтворення ${formatTimecode(playsFor)}`}
         </span>
-        <span>Out {formatTimecode(end)}</span>
+        <span>Кінець {formatTimecode(end)}</span>
       </div>
     </div>
   )

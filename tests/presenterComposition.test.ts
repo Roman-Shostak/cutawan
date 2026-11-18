@@ -101,7 +101,7 @@ describe('independent presenter/content composition', () => {
     expect(merged.visualLayout).toBe(manual.visualLayout)
     expect(automaticLayoutShots(merged)).toEqual([{ start: 10, end: 25, mode: 'fit',
       review: expect.objectContaining({ status: 'needs-review' }) }])
-    expect(layoutReviewMessage(merged)).toContain('full source retained')
+    expect(layoutReviewMessage(merged)).toContain('збережено повний кадр')
     merged.edit.end = 19
     expect(automaticLayoutShots(merged)[0].composition).toBeDefined()
   })

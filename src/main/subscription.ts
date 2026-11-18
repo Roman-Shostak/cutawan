@@ -61,7 +61,7 @@ function commandFor(executable: string): { command: string; prefix: string[]; no
     if (found?.endsWith('.cmd')) {
       if (basename(found).toLowerCase() === 'codex.cmd') {
         const entry = join(dirname(found), 'node_modules', '@openai', 'codex', 'bin', 'codex.js')
-        if (!existsSync(entry)) throw new Error('Select the Codex executable in Settings; this command shim is not a Codex installation.')
+        if (!existsSync(entry)) throw new Error('Виберіть у Налаштуваннях виконуваний файл Codex; ця команда-обгортка не є встановленням Codex.')
         return { command: process.execPath, prefix: [entry], node: true, shell: false }
       }
       // Other .cmd wrappers (e.g. a conda python.cmd) are not Codex; Node needs a shell to launch them.
@@ -140,21 +140,21 @@ function scriptPath(): string {
 
 async function assertChatGptLogin(config: SubscriptionSettings, signal: AbortSignal): Promise<void> {
   const status = await run(config.codexPath, ['login', 'status'], '', signal)
-  if (!/logged in using chatgpt/i.test(status)) throw new Error('Sign in to Codex with ChatGPT: run codex login. API-key authentication is not used by this option.')
+  if (!/logged in using chatgpt/i.test(status)) throw new Error('Увійдіть у Codex через ChatGPT: виконайте codex login. Автентифікація API-ключем у цьому варіанті не використовується.')
 }
 
 export async function checkSubscriptionSetup(): Promise<{ message: string; requestsToday: number }> {
   const config = { ...preferences }
   await assertChatGptLogin(config, AbortSignal.timeout(15_000))
   await checkLocalWhisperSetup()
-  return { message: 'ChatGPT sign-in and local transcription setup are ready. No model request was made.', requestsToday: await requestsToday() }
+  return { message: 'Вхід через ChatGPT і локальне розпізнавання готові. Запитів до моделі не було.', requestsToday: await requestsToday() }
 }
 
 export async function checkLocalWhisperSetup(): Promise<{ message: string }> {
   const config = { ...preferences }
-  if (!config.whisperModelPath) throw new Error('Install local Whisper or choose a model folder first.')
+  if (!config.whisperModelPath) throw new Error('Спершу встановіть локальний Whisper або виберіть папку моделі.')
   await run(config.pythonPath, [scriptPath(), '--check'], JSON.stringify({ modelPath: config.whisperModelPath }), AbortSignal.timeout(30_000))
-  return { message: 'Local Whisper dependencies and model files are ready. No transcription was run.' }
+  return { message: 'Залежності й файли моделі локального Whisper готові. Розпізнавання не запускалося.' }
 }
 
 async function requestsToday(): Promise<number> {
@@ -177,11 +177,11 @@ async function reserveRequestLocked(limit: number): Promise<void> {
   // Fail closed across multiple app processes too. Never reset a damaged or
   // locked ledger and accidentally give an expensive run a fresh allowance.
   const lock = await open(lockPath, 'wx').catch(() => {
-    throw new Error('Could not reserve ChatGPT usage. Close other Cutawan instances. If a previous run crashed, remove subscription-usage.lock from the app data folder, keeping subscription-usage.json.')
+    throw new Error('Не вдалося зарезервувати використання ChatGPT. Закрийте інші вікна Cutawan. Якщо попередній запуск аварійно завершився, видаліть subscription-usage.lock з папки даних програми, залишивши subscription-usage.json.')
   })
   try {
     const used = await requestsToday()
-    if (used >= limit) throw new Error(`ChatGPT daily request cap reached (${used}/${limit}). Cached results still work. Change the cap in Settings to allow more; no paid API fallback is used.`)
+    if (used >= limit) throw new Error(`Досягнуто денного ліміту запитів ChatGPT (${used}/${limit}). Результати з кешу працюють. Змініть ліміт у Налаштуваннях; платний API як запасний варіант не використовується.`)
     // Readers (including Settings and other processes) see either complete
     // ledger, never the empty/partial contents of an in-place write.
     const temporary = join(root, `subscription-usage-${randomUUID()}.json`)
@@ -220,7 +220,7 @@ export async function subscriptionJSON<T>(messages: ChatMessage[], schema: Recor
     const cache = join(root, key + '.json')
     if (existsSync(cache)) return JSON.parse(await readFile(cache, 'utf8')) as T
     const used = await requestsToday()
-    if (used >= config.dailyRequestLimit) throw new Error(`ChatGPT daily request cap reached (${used}/${config.dailyRequestLimit}). Cached results still work. Change the cap in Settings to allow more; no paid API fallback is used.`)
+    if (used >= config.dailyRequestLimit) throw new Error(`Досягнуто денного ліміту запитів ChatGPT (${used}/${config.dailyRequestLimit}). Результати з кешу працюють. Змініть ліміт у Налаштуваннях; платний API як запасний варіант не використовується.`)
     const timeout = AbortSignal.timeout(5 * 60_000)
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout
     await assertChatGptLogin(config, combined)
@@ -268,7 +268,7 @@ export async function subscriptionJSON<T>(messages: ChatMessage[], schema: Recor
 
 export async function transcribeLocally(filePath: string, opts: TranscribeFileOptions): Promise<WhisperResponse> {
   const config = { ...preferences }
-  if (!config.whisperModelPath) throw new Error('Install local Whisper or choose a model folder in Settings before transcribing.')
+  if (!config.whisperModelPath) throw new Error('Перед розпізнаванням встановіть локальний Whisper або виберіть папку моделі в Налаштуваннях.')
   const timeout = AbortSignal.timeout(30 * 60_000)
   const signal = opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout
   const output = await run(config.pythonPath, [scriptPath()], JSON.stringify({

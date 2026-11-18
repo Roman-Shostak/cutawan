@@ -49,14 +49,14 @@ describe('OpenRouter catalogue', () => {
     expect(mini.promptPricePerM).toBe(0.25)
     expect(mini.completionPricePerM).toBe(2)
     expect(mini.vision).toBe(true)
-    expect(formatModelPrice(mini)).toBe('$0.25 in · $2 out per 1M')
-    expect(formatContext(mini.contextLength)).toBe('400K context')
+    expect(formatModelPrice(mini)).toBe('$0.25 вхід · $2 вихід за 1M')
+    expect(formatContext(mini.contextLength)).toBe('400K контекст')
   })
 
   it('treats variable router pricing as unknown and zero pricing as free', () => {
     const models = parseOpenRouterModels(fixture.models, 'llm')
     expect(formatModelPrice(models.find(m => m.id === 'openrouter/auto')!)).toBeNull()
-    expect(formatModelPrice(models.find(m => m.id === 'openai/gpt-oss-120b:free')!)).toBe('Free')
+    expect(formatModelPrice(models.find(m => m.id === 'openai/gpt-oss-120b:free')!)).toBe('Безкоштовно')
   })
 
   it('keeps every transcription model and tolerates malformed responses', () => {
@@ -181,7 +181,7 @@ describe('OpenRouter transcription requests', () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ language: 'en', duration: 2, text: 'hello world' }), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     configureOpenAiEndpoints({ openRouter: true })
-    await expect(transcribeAudioFile('k', file, 'openai/whisper-1')).rejects.toThrow(/no word timestamps/)
+    await expect(transcribeAudioFile('k', file, 'openai/whisper-1')).rejects.toThrow(/не повернула таймкоди слів/)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -193,7 +193,7 @@ describe('OpenRouter transcription requests', () => {
     vi.stubGlobal('fetch', fetchMock)
     // The job read the OpenAI key, then Settings switched to OpenRouter.
     configureOpenAiEndpoints({ openRouter: true, credential: () => 'sk-or-current' })
-    await expect(transcribeAudioFile('sk-openai-old', file, 'openai/whisper-1')).rejects.toThrow(/connection changed/)
+    await expect(transcribeAudioFile('sk-openai-old', file, 'openai/whisper-1')).rejects.toThrow(/Підключення до ШІ змінилося/)
     expect(fetchMock).not.toHaveBeenCalled()
     await transcribeAudioFile('sk-or-current', file, 'openai/whisper-1')
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -206,7 +206,7 @@ describe('OpenRouter transcription requests', () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify(reply), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     configureOpenAiEndpoints({ openRouter: true, credential: () => '' })
-    await expect(transcribeAudioFile('sk-openai-old', file, 'openai/whisper-1')).rejects.toThrow(/connection changed/)
+    await expect(transcribeAudioFile('sk-openai-old', file, 'openai/whisper-1')).rejects.toThrow(/Підключення до ШІ змінилося/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
@@ -230,7 +230,7 @@ describe('requireWordTimings', () => {
   it('fails with a fix when speech comes back without word timings', () => {
     const segmentsOnly = { ...base, segments: [{ id: 0, text: 'hello big world', start: 0, end: 3 }] }
     expect(() => requireWordTimings(segmentsOnly, 'openai/whisper-1')).toThrow(OpenAIError)
-    expect(() => requireWordTimings(base, 'openai/whisper-1')).toThrow(/local transcription/)
+    expect(() => requireWordTimings(base, 'openai/whisper-1')).toThrow(/локальне розпізнавання/)
   })
 
   it('accepts silent audio with no text', () => {

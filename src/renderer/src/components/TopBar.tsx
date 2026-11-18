@@ -18,8 +18,8 @@ export default function TopBar(): React.JSX.Element {
   // A full-video edit with no AI clips behind it goes back to the setup screen.
   const backLabel =
     screen === 'editor' && editorBackScreen(project, selectedClipId) === 'clips'
-      ? 'All clips'
-      : 'Home'
+      ? 'Усі кліпи'
+      : 'На головну'
   // A non-destructive way back to the import screen from anywhere a project is
   // open (the old only route was deleting the current project).
   const showNewVideo = project !== null && screen !== 'processing'
@@ -44,7 +44,7 @@ export default function TopBar(): React.JSX.Element {
           />
           <span className="text-[15px] font-semibold tracking-tight">Cutawan</span>
           <span className="rounded-full border border-surface-600 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-            Open source
+            Відкритий код
           </span>
         </div>
       )}
@@ -60,11 +60,11 @@ export default function TopBar(): React.JSX.Element {
         {showNewVideo && (
           <button
             onClick={newProject}
-            title="Start over with a different video — your current project stays saved in Recent projects"
+            title="Почати з іншим відео — поточний проєкт лишиться в «Нещодавніх проєктах»"
             className="flex items-center gap-1.5 rounded-lg border border-surface-600 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-surface-800 hover:text-zinc-100"
           >
             <Plus size={14} />
-            New video
+            Нове відео
           </button>
         )}
         {(updateCheck?.updateAvailable || download.status !== 'idle') && (
@@ -72,13 +72,13 @@ export default function TopBar(): React.JSX.Element {
             onClick={() => setSettingsOpen(true, 'updates')}
             data-testid="update-notification"
             aria-live="polite"
-            title="Open app updates"
+            title="Відкрити оновлення програми"
             className="flex items-center gap-1.5 rounded-lg bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:bg-emerald-500/25"
           >
             <ArrowUpCircle size={14} />
-            {download.status === 'downloading' ? `Downloading update… ${Math.round(download.progress * 100)}%`
-              : download.status === 'downloaded' ? (download.mode === 'manual' ? 'Installer ready' : 'Restart to update')
-              : download.status === 'error' ? 'Update needs attention' : 'Update available'}
+            {download.status === 'downloading' ? `Завантажую оновлення… ${Math.round(download.progress * 100)}%`
+              : download.status === 'downloaded' ? (download.mode === 'manual' ? 'Інсталятор готовий' : 'Перезапустити й оновити')
+              : download.status === 'error' ? 'Оновлення потребує уваги' : 'Доступне оновлення'}
           </button>
         )}
         {settings && settings.subscription.provider === 'openrouter' && !settings.hasOpenRouterKey && (
@@ -86,7 +86,7 @@ export default function TopBar(): React.JSX.Element {
             onClick={() => setSettingsOpen(true)}
             className="rounded-lg bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/25"
           >
-            {settings.subscription.localTranscription ? 'Add an OpenRouter key to find clips' : 'Add OpenRouter key to get started'}
+            {settings.subscription.localTranscription ? 'Додайте ключ OpenRouter, щоб шукати кліпи' : 'Додайте ключ OpenRouter, щоб почати'}
           </button>
         )}
         {settings && settings.subscription.provider === 'api' && !settings.hasApiKey && (
@@ -94,14 +94,14 @@ export default function TopBar(): React.JSX.Element {
             onClick={() => setSettingsOpen(true)}
             className="rounded-lg bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/25"
           >
-            {settings.subscription.localTranscription ? 'Add an API key to find clips' : 'Add OpenAI API key to get started'}
+            {settings.subscription.localTranscription ? 'Додайте API-ключ, щоб шукати кліпи' : 'Додайте API-ключ, щоб почати'}
           </button>
         )}
         <button
           onClick={() => setSettingsOpen(true)}
           data-testid="settings-button"
           className="rounded-lg p-2 text-zinc-400 transition hover:bg-surface-800 hover:text-zinc-100"
-          title="Settings"
+          title="Налаштування"
         >
           <Settings size={18} />
         </button>

@@ -61,7 +61,7 @@ export async function createProjectFromUrl(
     cookiesFile: prefs.importCookiesPath
   }
   assertCookieAuthSupported(cookieOpts)
-  onProgress({ progress: -1, message: 'Checking the video…' })
+  onProgress({ progress: -1, message: 'Перевіряю відео…' })
   const meta = await withSelfUpdateRetry(binPath, onProgress, () =>
     fetchUrlMeta(binPath, url, cookieOpts)
   ).catch(rethrowWithLoginHint(prefs.importCookiesBrowser, Boolean(prefs.importCookiesPath)))
@@ -70,12 +70,12 @@ export async function createProjectFromUrl(
   const dir = projectDir(id)
   await mkdir(dir, { recursive: true })
   const videoPath = join(dir, 'source.mp4')
-  onProgress({ progress: 0.15, message: 'Downloading video…' })
+  onProgress({ progress: 0.15, message: 'Завантажую відео…' })
   await withSelfUpdateRetry(binPath, onProgress, () =>
     downloadUrlVideo(binPath, meta.webpageUrl, videoPath, onProgress, cookieOpts)
   ).catch(rethrowWithLoginHint(prefs.importCookiesBrowser, Boolean(prefs.importCookiesPath)))
 
-  onProgress({ progress: 0.97, message: 'Reading video…' })
+  onProgress({ progress: 0.97, message: 'Читаю відео…' })
   const video = await probeVideo(videoPath)
   const now = Date.now()
   const project: Project = {
@@ -90,7 +90,7 @@ export async function createProjectFromUrl(
     videoType: 'auto'
   }
   await saveProject(project)
-  onProgress({ progress: 1, message: 'Done' })
+  onProgress({ progress: 1, message: 'Готово' })
   return project
 }
 
@@ -142,7 +142,7 @@ export async function analyzeProject(
 ): Promise<Project> {
   const apiKey = getAnalysisCredential()
   if (!apiKey) {
-    throw new Error(`No ${missingCredentialName()} configured. Add one in Settings before generating clips.`)
+    throw new Error(`Не налаштовано: ${missingCredentialName()}. Додайте його в Налаштуваннях перед генерацією кліпів.`)
   }
   const settings = getModelPreferences()
   const generationId = randomUUID()
@@ -189,7 +189,7 @@ export async function analyzeProject(
       p.visualDiscovery = options.visualDiscovery === true
       p.discoveryReport = discovery
     })
-    onProgress({ stage: 'analyze', progress: 0.6, message: 'Finding spoken moments…' })
+    onProgress({ stage: 'analyze', progress: 0.6, message: 'Шукаю моменти в мові…' })
     let clips = transcript.segments.length ? await timed('highlights', () => detectHighlights(
       apiKey,
       settings.analysisModel,
@@ -207,7 +207,7 @@ export async function analyzeProject(
     }
 
     // Review the actual planned edit and repair explicitly missing visual payoffs.
-    onProgress({ stage: 'analyze', progress: 0.64, message: 'Scoring visuals…' })
+    onProgress({ stage: 'analyze', progress: 0.64, message: 'Оцінюю візуал…' })
     let scored = 0
     const incomplete = new Set<string>()
     const incoherent = new Set<string>()
@@ -241,7 +241,7 @@ export async function analyzeProject(
       onProgress({
         stage: 'analyze',
         progress: 0.64 + (scored / clips.length) * 0.13,
-        message: 'Scoring visuals…'
+        message: 'Оцінюю візуал…'
       })
     }), { clips: clips.length })
     clips = clips.filter(clip => !incomplete.has(clip.id))
@@ -290,7 +290,7 @@ export async function analyzeProject(
     })
 
     if (options.broll) {
-      onProgress({ stage: 'broll', progress: 0.82, message: 'Finding B-roll images…' })
+      onProgress({ stage: 'broll', progress: 0.82, message: 'Шукаю зображення для вставок…' })
       let brolled = 0
       await timed('broll', () => mapLimit(clips, 3, async (clip) => {
         signal?.throwIfAborted()
@@ -306,7 +306,7 @@ export async function analyzeProject(
         onProgress({
           stage: 'broll',
           progress: 0.82 + (brolled / clips.length) * 0.08,
-          message: 'Finding B-roll images…'
+          message: 'Шукаю зображення для вставок…'
         })
       }))
       await updateProject(project.id, (p) => {
@@ -318,7 +318,7 @@ export async function analyzeProject(
       })
     }
 
-    onProgress({ stage: 'thumbnails', progress: 0.9, message: 'Creating thumbnails…' })
+    onProgress({ stage: 'thumbnails', progress: 0.9, message: 'Створюю мініатюри…' })
     const thumbsDir = join(projectDir(project.id), 'thumbs')
     await mkdir(thumbsDir, { recursive: true })
     let thumbnailed = 0
@@ -334,7 +334,7 @@ export async function analyzeProject(
       onProgress({
         stage: 'thumbnails',
         progress: 0.9 + (thumbnailed / clips.length) * 0.08,
-        message: 'Creating thumbnails…'
+        message: 'Створюю мініатюри…'
       })
     }), { clips: clips.length })
 
@@ -349,7 +349,7 @@ export async function analyzeProject(
         return result ? { ...current, thumbnailPath: result.thumbnailPath } : current
       })
     })
-    onProgress({ stage: 'done', progress: 1, message: 'Done' })
+    onProgress({ stage: 'done', progress: 1, message: 'Готово' })
     return persisted
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined)

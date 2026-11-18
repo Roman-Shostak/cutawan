@@ -15,8 +15,8 @@ import ModelPicker, { type PinnedOption } from './ModelPicker'
 const LOCAL_WHISPER = 'local-whisper'
 const LOCAL_OPTION: PinnedOption = {
   id: LOCAL_WHISPER,
-  name: 'Local Whisper (on this computer)',
-  note: 'Free and private · needs Python and a one-time model download'
+  name: 'Локальний Whisper (на цьому комп’ютері)',
+  note: 'Безкоштовно й приватно · потрібен Python і одноразове завантаження моделі'
 }
 
 export interface OpenRouterChoice {
@@ -72,56 +72,56 @@ export default function OpenRouterSetup({ value, onChange, subscription, onSubsc
 
   return <div className="space-y-4" data-testid="openrouter-setup">
     <div>
-      <label className="block text-xs" htmlFor="openrouter-key">OpenRouter API key</label>
+      <label className="block text-xs" htmlFor="openrouter-key">API-ключ OpenRouter</label>
       <div className="mt-1 flex gap-2">
         <input id="openrouter-key" type="password" autoComplete="off" value={value.apiKey}
           onChange={e => { onChange({ apiKey: e.target.value }); setKeyStatus(null) }}
-          placeholder={settings?.hasOpenRouterKey ? `Current: ${settings.openRouterKeyMasked}` : 'sk-or-v1-…'}
+          placeholder={settings?.hasOpenRouterKey ? `Поточний: ${settings.openRouterKeyMasked}` : 'sk-or-v1-…'}
           className="w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm" />
         <button type="button" onClick={() => void checkKey()} disabled={checking || (!value.apiKey.trim() && !settings?.hasOpenRouterKey)}
-          className="shrink-0 rounded-lg border border-surface-600 px-3 py-2 text-sm disabled:opacity-50">{checking ? 'Checking…' : 'Check key'}</button>
+          className="shrink-0 rounded-lg border border-surface-600 px-3 py-2 text-sm disabled:opacity-50">{checking ? 'Перевіряю…' : 'Перевірити ключ'}</button>
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <a href={OPENROUTER_KEYS_URL} target="_blank" rel="noreferrer" className="text-xs underline">Create an OpenRouter key ↗</a>
+        <a href={OPENROUTER_KEYS_URL} target="_blank" rel="noreferrer" className="text-xs underline">Створити ключ OpenRouter ↗</a>
         {settings?.keyStorageSecure !== false
-          ? <span className="flex items-center gap-1 text-[11px] text-zinc-500"><ShieldCheck size={12} /> Encrypted with your system keychain</span>
-          : <span className="flex items-center gap-1 text-[11px] text-amber-400"><TriangleAlert size={12} /> No keychain: stored obfuscated only</span>}
+          ? <span className="flex items-center gap-1 text-[11px] text-zinc-500"><ShieldCheck size={12} /> Зашифровано системною в’язкою ключів</span>
+          : <span className="flex items-center gap-1 text-[11px] text-amber-400"><TriangleAlert size={12} /> Немає в’язки ключів: зберігається лише замаскованим</span>}
       </div>
       {keyStatus && <p role="status" className={`mt-2 text-xs ${keyStatus.ok ? 'text-emerald-400' : 'text-red-400'}`}>{keyStatus.message}</p>}
       <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-        The key is sent only to openrouter.ai. OpenRouter bills usage to your OpenRouter credits.
+        Ключ надсилається лише на openrouter.ai. OpenRouter списує оплату з ваших кредитів OpenRouter.
       </p>
     </div>
 
-    <ModelPicker label="Clip-finding model (LLM)" testId="openrouter-model" value={value.model}
+    <ModelPicker label="Модель пошуку кліпів (LLM)" testId="openrouter-model" value={value.model}
       onChange={model => onChange({ model })} models={catalog?.llm ?? []} suggested={SUGGESTED_OPENROUTER_MODELS} loading={!catalog} />
     <p className="-mt-2 text-[11px] leading-relaxed text-zinc-500">
-      Models tagged Vision can also judge sampled frames for visual moments and framing.
+      Моделі з позначкою Vision також оцінюють кадри для візуальних моментів і кадрування.
     </p>
 
-    <ModelPicker label="Transcription" testId="openrouter-transcription" value={transcription}
+    <ModelPicker label="Розпізнавання мови" testId="openrouter-transcription" value={transcription}
       onChange={id => {
         if (id === LOCAL_WHISPER) onSubscriptionChange({ localTranscription: true })
         else { onSubscriptionChange({ localTranscription: false }); onChange({ transcriptionModel: id }) }
       }}
       models={catalog?.transcription ?? []} suggested={OPENROUTER_TRANSCRIPTION_MODELS} pinned={[LOCAL_OPTION]} loading={!catalog}
-      allowCustom={false} suggestedTitle="Via OpenRouter · word timestamps" />
+      allowCustom={false} suggestedTitle="Через OpenRouter · таймкоди слів" />
     <p className="-mt-2 text-[11px] leading-relaxed text-zinc-500">
-      Captions need a timestamp for every word. On OpenRouter only the Whisper models return them, so other transcription models aren’t offered.
+      Субтитрам потрібен таймкод кожного слова. На OpenRouter їх повертають лише моделі Whisper, тому інших моделей розпізнавання немає у списку.
     </p>
 
     {catalog && !catalog.live && <p className="rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-400">
-      Couldn’t load OpenRouter’s model list{catalog.error ? ` (${catalog.error})` : ''}. Showing suggested models; you can also type any clip-finding model id.
+      Не вдалося завантажити список моделей OpenRouter{catalog.error ? ` (${catalog.error})` : ''}. Показано рекомендовані моделі; можна також вписати будь-який ідентифікатор моделі.
     </p>}
 
     {subscription.localTranscription && <div className="space-y-3 rounded-lg border border-surface-700 p-3">
-      <label className="block text-xs">Python executable (Python 3.10+)
+      <label className="block text-xs">Виконуваний файл Python (Python 3.10+)
         <input value={subscription.pythonPath} onChange={e => onSubscriptionChange({ pythonPath: e.target.value })} className={inputClass} />
       </label>
       <LocalWhisperSetup pythonPath={subscription.pythonPath} onConfigured={(pythonPath, whisperModelPath) => onSubscriptionChange({ pythonPath, whisperModelPath })} />
-      <label className="block text-xs">Whisper model folder (if already installed)
+      <label className="block text-xs">Папка моделі Whisper (якщо вже встановлена)
         <input value={subscription.whisperModelPath} onChange={e => onSubscriptionChange({ whisperModelPath: e.target.value })}
-          placeholder="Folder containing model.bin" className={inputClass} />
+          placeholder="Папка з файлом model.bin" className={inputClass} />
       </label>
     </div>}
   </div>

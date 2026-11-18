@@ -53,7 +53,7 @@ export const EXPORT_CANCELLED_MESSAGE = 'Export cancelled'
 /** How far apart durations may be for a relinked file to count as the same video. */
 const RELINK_DURATION_TOLERANCE_SEC = 2
 
-const VIDEO_FILTERS = [{ name: 'Videos', extensions: [...VIDEO_EXTENSIONS] }]
+const VIDEO_FILTERS = [{ name: 'Відео', extensions: [...VIDEO_EXTENSIONS] }]
 
 async function pickVideoFile(sender: Electron.WebContents, title: string): Promise<string | null> {
   // Headless/CI hook (like CUTAWAN_SMOKE): skip the native dialog.
@@ -81,7 +81,7 @@ export function registerIpcHandlers(): void {
     }
   })
   handle('dialog:selectVideo', async (event) => {
-    return pickVideoFile(event.sender, 'Choose a video')
+    return pickVideoFile(event.sender, 'Виберіть відео')
   })
 
   handle('dialog:selectDirectory', async (event) => {
@@ -89,7 +89,7 @@ export function registerIpcHandlers(): void {
     if (process.env.CUTAWAN_EXPORT_DIR) return process.env.CUTAWAN_EXPORT_DIR
     const win = BrowserWindow.fromWebContents(event.sender)
     const result = await dialog.showOpenDialog(win!, {
-      title: 'Choose export folder',
+      title: 'Виберіть папку експорту',
       properties: ['openDirectory', 'createDirectory']
     })
     return result.canceled ? null : result.filePaths[0]
@@ -107,7 +107,7 @@ export function registerIpcHandlers(): void {
 
   handle('project:analyze', async (event, projectId: string, options: AnalyzeOptions) => {
     if (runningAnalyses.has(projectId)) {
-      throw new Error('This project is already being analyzed.')
+      throw new Error('Цей проєкт уже аналізується.')
     }
     const controller = new AbortController()
     runningAnalyses.set(projectId, controller)
@@ -116,7 +116,7 @@ export function registerIpcHandlers(): void {
       const project = await loadProject(projectId)
       if (project.sourceMissing) {
         throw new Error(
-          `The source video is missing (${project.video.path}). Relink it before generating clips.`
+          `Вихідне відео не знайдено (${project.video.path}). Вкажіть його знову перед генерацією кліпів.`
         )
       }
       const analysed = await analyzeProject(
@@ -146,7 +146,7 @@ export function registerIpcHandlers(): void {
       // Shares the analysis lock and cancel path: both flows own the same
       // project and neither may run while the other is transcribing it.
       if (runningAnalyses.has(projectId)) {
-        throw new Error('This project is already being processed.')
+        throw new Error('Цей проєкт уже обробляється.')
       }
       const controller = new AbortController()
       runningAnalyses.set(projectId, controller)
@@ -155,7 +155,7 @@ export function registerIpcHandlers(): void {
         const project = await loadProject(projectId)
         if (project.sourceMissing) {
           throw new Error(
-            `The source video is missing (${project.video.path}). Relink it before captioning.`
+            `Вихідне відео не знайдено (${project.video.path}). Вкажіть його знову перед створенням субтитрів.`
           )
         }
         return await captionWholeVideo(
@@ -227,7 +227,7 @@ export function registerIpcHandlers(): void {
 
   handle('project:relinkVideo', async (event, projectId: string) => {
     const project = await loadProject(projectId)
-    const picked = await pickVideoFile(event.sender, `Locate "${project.video.fileName}"`)
+    const picked = await pickVideoFile(event.sender, `Знайдіть «${project.video.fileName}»`)
     if (!picked) return project
 
     const video = await probeVideo(picked)
@@ -259,9 +259,9 @@ export function registerIpcHandlers(): void {
     if (!found) throw new Error('Clip not found')
     let clip: Clip = found
     if (project.sourceMissing) {
-      throw new Error(`The source video is missing (${project.video.path}). Relink it to export.`)
+      throw new Error(`Вихідне відео не знайдено (${project.video.path}). Вкажіть його знову для експорту.`)
     }
-    if (runningExports.has(clip.id)) throw new Error('This clip is already exporting.')
+    if (runningExports.has(clip.id)) throw new Error('Цей кліп уже експортується.')
 
     const suffix = clip.edit.aspect === 'original' ? '' : ` (${clip.edit.aspect.replace(':', 'x')})`
     const outputPath = uniqueOutputPath(opts.outputDir, `${sanitizeFileName(clip.title)}${suffix}`)
@@ -276,7 +276,7 @@ export function registerIpcHandlers(): void {
       // export must frame the clip the way the editor would have shown it.
       if (needsReframe(clip)) {
         if (!event.sender.isDestroyed()) {
-          event.sender.send('export:progress', { clipId: clip.id, progress: 0, message: 'Analysing framing…' })
+          event.sender.send('export:progress', { clipId: clip.id, progress: 0, message: 'Аналізую кадрування…' })
         }
       }
       // Also join explicit retries of already-completed layouts.
@@ -298,7 +298,7 @@ export function registerIpcHandlers(): void {
         signal: controller.signal,
         onProgress: (fraction) => {
           if (!event.sender.isDestroyed()) {
-            event.sender.send('export:progress', { clipId: clip.id, progress: fraction, message: 'Rendering…' })
+            event.sender.send('export:progress', { clipId: clip.id, progress: fraction, message: 'Рендерю…' })
           }
         }
       })
@@ -334,7 +334,7 @@ export function registerIpcHandlers(): void {
     const clip = project.clips.find((c) => c.id === clipId)
     if (!clip) throw new Error('Clip not found')
     const apiKey = getAnalysisCredential()
-    if (!apiKey) throw new Error(`Add your ${missingCredentialName()} in Settings first.`)
+    if (!apiKey) throw new Error(`Спершу додайте ${missingCredentialName()} у Налаштуваннях.`)
     const caption = await generateSocialCaption(
       apiKey,
       getModelPreferences().analysisModel,
@@ -388,9 +388,9 @@ export function registerIpcHandlers(): void {
     } else {
       const win = BrowserWindow.fromWebContents(event.sender)
       const result = await dialog.showOpenDialog(win!, {
-        title: 'Choose font files',
+        title: 'Виберіть файли шрифтів',
         properties: ['openFile', 'multiSelections'],
-        filters: [{ name: 'Fonts', extensions: ['ttf', 'otf'] }]
+        filters: [{ name: 'Шрифти', extensions: ['ttf', 'otf'] }]
       })
       if (result.canceled) return listCustomFonts()
       paths = result.filePaths
@@ -407,9 +407,9 @@ export function registerIpcHandlers(): void {
     }
     const win = BrowserWindow.fromWebContents(event.sender)
     const result = await dialog.showOpenDialog(win!, {
-      title: 'Import cookies file',
+      title: 'Імпорт файлу кукі',
       properties: ['openFile'],
-      filters: [{ name: 'Cookies', extensions: ['txt'] }]
+      filters: [{ name: 'Кукі', extensions: ['txt'] }]
     })
     if (result.canceled || result.filePaths.length === 0) return getSettings()
     await installImportCookiesFile(result.filePaths[0])
@@ -429,9 +429,9 @@ export function registerIpcHandlers(): void {
     } else {
       const win = BrowserWindow.fromWebContents(event.sender)
       const result = await dialog.showOpenDialog(win!, {
-        title: 'Choose a watermark or logo image',
+        title: 'Виберіть зображення логотипу чи водяного знака',
         properties: ['openFile'],
-        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
+        filters: [{ name: 'Зображення', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
       })
       picked = result.canceled ? null : result.filePaths[0]
     }

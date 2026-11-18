@@ -89,7 +89,7 @@ export function applySpeakerSplits(
   if (cursor < end) shots.push({ start: cursor, end, mode: 'crop' })
   if (shots.length > 48) return assessment
   return { ...(assessment ?? { preserveContext: false, allowZoom: true, reason: '' }), start, end, kind: assessment?.kind ?? 'camera',
-    reason: [assessment?.reason, 'Split screen during two-person exchanges.'].filter(Boolean).join(' '), shots }
+    reason: [assessment?.reason, 'Розділений екран під час діалогу двох людей.'].filter(Boolean).join(' '), shots }
 }
 
 /** Retain the full scene where face detail cannot support a reliable close-up. */
@@ -117,7 +117,7 @@ export function protectLayoutRanges(
   })
   return {
     start, end, preserveContext: true, allowZoom: false,
-    reason: [assessment?.reason, 'Preserve shots with insufficient face detail for reliable speaker framing.'].filter(Boolean).join(' '),
+    reason: [assessment?.reason, 'Плани зі слабо видимими обличчями збережено повністю — кадрування мовця ненадійне.'].filter(Boolean).join(' '),
     shots: shots.length <= 48 ? shots : [{ start, end, mode: 'fit' }]
   }
 }
@@ -127,7 +127,7 @@ export function automaticLayoutShots(clip: Pick<Clip, 'edit' | 'visualLayout'>):
   if (clip.edit.framing !== 'auto' || clip.edit.reframeMode !== 'crop' || clip.edit.aspect === 'original') return []
   if (!validLayoutShots(clip.visualLayout, clip.edit.start, clip.edit.end)) {
     return clip.visualLayout?.preserveContext ? [{ start: clip.edit.start, end: clip.edit.end, mode: 'fit',
-      review: { status: 'needs-review', reason: 'Layout does not cover this trim; full source retained. Adjust source regions or choose a layout.' } }] : []
+      review: { status: 'needs-review', reason: 'Компонування не охоплює цю обрізку; збережено повний кадр. Налаштуйте області джерела або виберіть компонування.' } }] : []
   }
   const regions = new Set<string>()
   return clip.visualLayout!.shots!.filter((shot) => shot.start < clip.edit.end && shot.end > clip.edit.start).map(shot => {
@@ -144,12 +144,12 @@ export function automaticLayoutShots(clip: Pick<Clip, 'edit' | 'visualLayout'>):
       if (presenter) composition = presenterComposition(content.source, presenter.source, preference)
     }
     const planned = composition === shot.composition ? shot : { ...shot, composition,
-      review: { status: 'needs-review' as const, reason: 'Layout changed; check the preview before exporting.' } }
+      review: { status: 'needs-review' as const, reason: 'Компонування змінено; перевірте превʼю перед експортом.' } }
     if ((!shot.region && !composition) || shot.mode !== 'fit') return planned
     const key = JSON.stringify([shot.region, shot.overview ?? false, composition])
     // Bound the number of full-resolution render branches; use full fit beyond it.
     if (!regions.has(key) && regions.size >= 8) return { ...shot, region: undefined, overview: undefined, composition: undefined,
-      review: { status: 'needs-review' as const, reason: 'Complex layout preserved in full; check readability.' } }
+      review: { status: 'needs-review' as const, reason: 'Складне компонування збережено повністю; перевірте читабельність.' } }
     regions.add(key)
     return planned
   })

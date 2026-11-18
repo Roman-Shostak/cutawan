@@ -635,7 +635,7 @@ async function render(job: RenderJob): Promise<RenderResult> {
   // compacted output timeline.
   const segments = clipKeptSegments(clip, transcript)
   if (segments && segments.length === 0) {
-    throw new Error('Nothing is left to export: every part of this clip has been cut. Undo a cut or widen the trim.')
+    throw new Error('Нічого експортувати: усі частини кліпу вирізано. Скасуйте вирізання або розширте обрізку.')
   }
   const map = segments ? new TimeMap(segments) : null
   const outputDuration = map ? map.outputDuration : duration

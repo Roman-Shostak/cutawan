@@ -94,8 +94,8 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
   if (process.env.CUTAWAN_SMOKE_UPDATES) {
     await click('[data-testid="update-notification"]')
     const valid = await win.webContents.executeJavaScript(`
-      document.body.innerText.includes('Download Mac installer') &&
-      !document.body.innerText.includes('Pulls the latest code') &&
+      document.body.innerText.includes('Завантажити інсталятор для Mac') &&
+      !document.body.innerText.includes('Завантажує найновіший код') &&
       !document.body.innerText.includes('Download and install')
     `)
     if (!valid) throw new Error('Unsigned Mac update route did not offer a manual download')
@@ -107,11 +107,11 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
     await shot('update-downloading')
     win.webContents.send('update:state', { status: 'error', progress: 0, mode: 'manual', version: '99.0.0', error: 'Test download interruption' })
     await sleep(300)
-    if (!await win.webContents.executeJavaScript("document.body.innerText.includes('Retry download')")) throw new Error('Missing download retry')
+    if (!await win.webContents.executeJavaScript("document.body.innerText.includes('Повторити завантаження')")) throw new Error('Missing download retry')
     await shot('update-retry')
     win.webContents.send('update:state', { status: 'downloaded', progress: 1, mode: 'manual', version: '99.0.0' })
     await sleep(300)
-    if (!await win.webContents.executeJavaScript("document.body.innerText.includes('Installer ready') && document.body.innerText.includes('Open installer for v99.0.0')")) throw new Error('Missing installer ready notification')
+    if (!await win.webContents.executeJavaScript("document.body.innerText.includes('Інсталятор готовий') && document.body.innerText.includes('Відкрити інсталятор v99.0.0')")) throw new Error('Missing installer ready notification')
     await shot('update-ready')
     app.quit()
     return
@@ -153,13 +153,13 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
   await sleep(400)
   await key('Delete')
   await sleep(600)
-  if (!(await hasText('1 cut'))) throw new Error('Smoke capture: splitting and deleting a piece did not cut it')
-  if (!(await hasText('Review edits'))) throw new Error('Smoke capture: a cut did not mark the editorial assessment stale')
+  if (!(await hasText('вирізано: 1'))) throw new Error('Smoke capture: splitting and deleting a piece did not cut it')
+  if (!(await hasText('Перегляньте зміни'))) throw new Error('Smoke capture: a cut did not mark the editorial assessment stale')
   await shot('editor-cut')
   await key('Z', [process.platform === 'darwin' ? 'meta' : 'control'])
   await sleep(600)
-  if (await hasText('1 cut')) throw new Error('Smoke capture: undo did not restore the cut piece')
-  if (await hasText('Review edits')) throw new Error('Smoke capture: undo did not restore the assessed selection')
+  if (await hasText('вирізано: 1')) throw new Error('Smoke capture: undo did not restore the cut piece')
+  if (await hasText('Перегляньте зміни')) throw new Error('Smoke capture: undo did not restore the assessed selection')
   // Out to the setup screen, which is where the two modes are chosen.
   await click('[data-testid="back-button"]')
   await click('[data-testid="regenerate-button"]')

@@ -45,3 +45,14 @@ export function outputLanguageInstruction(code: string | null | undefined, field
   const target = name ? `${name} (the language the speaker uses)` : 'the same language the speaker uses in the transcript'
   return `Write ${fields} in ${target}, even though these instructions are in English. Hashtags too: use words in that language, not English translations.`
 }
+
+/**
+ * Prompt line for analysis steps whose free-text fields are shown to the
+ * creator (reasons, concerns, summaries). Structural values and verbatim
+ * quotes stay as they are, because code validates them against the source.
+ */
+export function creatorTextInstruction(code: string | null | undefined, fields: string): string {
+  const name = languageName(code)
+  const target = name ?? 'the same language the speaker uses in the transcript'
+  return `Write ${fields} in ${target} — they are shown to the creator. Keep JSON keys, enum values, ids and any exact transcript quotes unchanged.`
+}

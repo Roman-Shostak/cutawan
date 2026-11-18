@@ -10,6 +10,7 @@ import { EDITORIAL_BUDGET as BUDGET, EDITORIAL_DIMENSIONS, EDITORIAL_VERSION, ed
 import { throwIfSubscriptionError, usesSubscription } from '../subscription'
 import { chatJSON, OpenAIError, type ChatContentPart } from './openai'
 import { extractFramesAtTimes, plannedClipFrameTimes } from './visualScore'
+import { creatorTextInstruction } from '@shared/outputLanguage'
 
 interface SpeechEvidence { start: number; end: number; text: string; selected: boolean }
 export interface EditorialInput { clip: Clip; speech: SpeechEvidence[]; times: number[]; truncated: boolean }
@@ -179,7 +180,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
   const evaluated = candidates.map(c => ({ ...c, editorial: needsEditorialReview(c, opts.transcript, 'The candidate was outside the bounded editorial review budget.') }))
   for (let offset = 0; offset < Math.min(evaluated.length, BUDGET.maxCandidates); offset += batchSize) {
     opts.signal?.throwIfAborted()
-    opts.onProgress?.(`Reviewing clip stories (${offset + 1}–${Math.min(offset + batchSize, evaluated.length)}/${evaluated.length})…`)
+    opts.onProgress?.(`Перевіряю історії кліпів (${offset + 1}–${Math.min(offset + batchSize, evaluated.length)}/${evaluated.length})…`)
     const inputs: EditorialInput[] = [], dirs: string[] = []
     const parts: ChatContentPart[] = [{ type: 'text', text: `Quoted user preferences: ${JSON.stringify(opts.prompt.slice(0, 8000))}. ${opts.prompt.trim() ? 'Use these preferences for audienceFit.' : 'No explicit audience preferences; audienceFit must be null.'}` }]
     try {
@@ -208,7 +209,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
       }
       if (!inputs.length) continue
       report.reviewRequestCount++
-      const response = await chatJSON<unknown>(opts.apiKey, opts.model, [{ role: 'system', content: SYSTEM }, { role: 'user', content: parts }],
+      const response = await chatJSON<unknown>(opts.apiKey, opts.model, [{ role: 'system', content: `${SYSTEM}\n\n${creatorTextInstruction(opts.transcript.language, 'reason, concerns and takeaway')}` }, { role: 'user', content: parts }],
         'editorial_review', reviewSchema, opts.signal)
       opts.signal?.throwIfAborted()
       const validEnvelope = object(response) && Array.isArray(response.reviews) && response.reviews.length === inputs.length &&
@@ -228,7 +229,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
   const reviewed = evaluated.filter(c => c.editorial.status === 'reviewed')
   let repeated: RepeatedIdea[] = []
   if (reviewed.length > 1) {
-    opts.onProgress?.('Checking the shortlist for repeated ideas…')
+    opts.onProgress?.('Шукаю повтори ідей серед відібраних…')
     report.diversityRequestCount++
     try {
       const response = await chatJSON<unknown>(opts.apiKey, opts.model, [{ role: 'system', content:

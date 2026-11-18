@@ -121,30 +121,30 @@ export async function getGpuStatus(): Promise<GpuEncoderStatus> {
   const canDownload = process.platform === 'linux' || process.platform === 'win32'
   const probe = await getNvencProbe()
   if (!probe.bin && await videoToolboxWorks()) {
-    return { available: true, detail: 'Apple VideoToolbox hardware encoder ready', canDownloadFfmpeg: false }
+    return { available: true, detail: 'Апаратний кодек Apple VideoToolbox готовий', canDownloadFfmpeg: false }
   }
   if (probe.bin) {
     return {
       available: true,
       detail:
         probe.bin === 'ffmpeg'
-          ? 'NVIDIA NVENC ready (system ffmpeg)'
-          : 'NVIDIA NVENC ready (downloaded GPU build)',
+          ? 'NVIDIA NVENC готовий (системний ffmpeg)'
+          : 'NVIDIA NVENC готовий (завантажена GPU-збірка)',
       canDownloadFfmpeg: false
     }
   }
   if (probe.encoderPresentButBroken) {
     return {
       available: false,
-      detail: 'A GPU-capable ffmpeg was found, but no working NVIDIA GPU/driver was detected.',
+      detail: 'Знайдено ffmpeg з підтримкою GPU, але робочої відеокарти чи драйвера NVIDIA не виявлено.',
       canDownloadFfmpeg: false
     }
   }
   return {
     available: false,
     detail: canDownload
-      ? 'The bundled ffmpeg has no GPU encoder. Download a GPU-enabled ffmpeg build to use your NVIDIA card.'
-      : 'GPU export requires an ffmpeg with NVENC on your PATH.',
+      ? 'Вбудований ffmpeg не має GPU-кодека. Завантажте збірку ffmpeg з підтримкою GPU, щоб використовувати відеокарту NVIDIA.'
+      : 'Для експорту на GPU потрібен ffmpeg з NVENC у PATH.',
     canDownloadFfmpeg: canDownload
   }
 }
@@ -284,7 +284,7 @@ export async function downloadGpuFfmpeg(
   await rm(extractDir, { recursive: true, force: true })
   await mkdir(extractDir, { recursive: true })
 
-  onProgress({ progress: 0, message: 'Downloading GPU-enabled ffmpeg…' })
+  onProgress({ progress: 0, message: 'Завантажую ffmpeg з підтримкою GPU…' })
   const res = await fetch(url, { redirect: 'follow' })
   if (!res.ok || !res.body) {
     throw new Error(`Could not download ffmpeg build (HTTP ${res.status}).`)
@@ -297,7 +297,7 @@ export async function downloadGpuFfmpeg(
       if (total > 0) {
         onProgress({
           progress: (seen / total) * 0.85,
-          message: 'Downloading GPU-enabled ffmpeg…'
+          message: 'Завантажую ffmpeg з підтримкою GPU…'
         })
       }
       yield chunk
@@ -305,7 +305,7 @@ export async function downloadGpuFfmpeg(
   }
   await pipeline(Readable.fromWeb(res.body as WebReadableStream), withProgress, createWriteStream(archivePath))
 
-  onProgress({ progress: 0.88, message: 'Extracting…' })
+  onProgress({ progress: 0.88, message: 'Розпаковую…' })
   // GNU tar handles .tar.xz on Linux; Windows 10+ bsdtar handles both zip and tar.
   await new Promise<void>((resolve, reject) => {
     const child = spawn('tar', ['-xf', archivePath, '-C', extractDir], { windowsHide: true })
@@ -323,9 +323,9 @@ export async function downloadGpuFfmpeg(
   await rm(archivePath, { force: true }).catch(() => undefined)
   await rm(extractDir, { recursive: true, force: true }).catch(() => undefined)
 
-  onProgress({ progress: 0.96, message: 'Verifying GPU encoder…' })
+  onProgress({ progress: 0.96, message: 'Перевіряю GPU-кодек…' })
   invalidateEncoderCache()
   const status = await getGpuStatus()
-  onProgress({ progress: 1, message: 'Done' })
+  onProgress({ progress: 1, message: 'Готово' })
   return status
 }

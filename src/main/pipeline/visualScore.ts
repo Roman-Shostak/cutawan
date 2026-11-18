@@ -9,6 +9,7 @@ import { wordsInRange } from '@shared/captionLayout'
 import { clipKeptSegments, editedClipDuration, TimeMap } from '@shared/tighten'
 import { chatJSON, type ChatContentPart } from './openai'
 import { runAnalysisFfmpeg as runFfmpeg } from './ffmpeg'
+import { creatorTextInstruction } from '@shared/outputLanguage'
 
 /**
  * Editorial review using six source frames and the selected transcript.
@@ -230,7 +231,7 @@ export async function assessClipVisuals(
       apiKey,
       model,
       [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: `${SYSTEM_PROMPT}\n\n${creatorTextInstruction(transcript.language, 'reason, layout_reason and visual_summary')}` },
         { role: 'user', content: parts }
       ],
       'visual_assessment',
