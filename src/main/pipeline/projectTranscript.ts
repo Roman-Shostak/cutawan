@@ -33,6 +33,8 @@ export interface EnsureTranscriptOptions {
   allowNoSpeech?: boolean
   /** Audio track carrying the creator's voice (multi-track recordings); 0 = first. */
   audioTrack?: number
+  /** Names and slang Whisper should spell right. */
+  vocabulary?: string
 }
 
 export async function ensureTranscript(
@@ -113,7 +115,8 @@ export async function ensureTranscript(
             ? `Розпізнаю мову (частина ${Math.min(chunks.length, Math.ceil(f * chunks.length))}/${chunks.length})…`
             : 'Розпізнаю мову через Whisper…'
       }),
-    signal
+    signal,
+    options.vocabulary ?? ''
   )
   if (transcript.segments.length === 0 && !options.allowNoSpeech) throw new Error(options.noSpeechError)
   transcript.speech = (await speech) ?? undefined

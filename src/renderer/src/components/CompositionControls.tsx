@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { Clip, Composition, ContentRegion } from '@shared/types'
+import type { Clip, Composition, ContentRegion, StreamTemplate } from '@shared/types'
+import { applyStreamTemplate, clipStreamTemplate } from '@shared/streamLayout'
 import { isPresenterComposition, presenterComposition } from '@shared/composition'
 import { compositionHidesTitle, layoutReviewMessage, layoutShotAt, validLayoutShots } from '@shared/contentType'
 import { usePreviewBus } from '../lib/previewBus'
@@ -18,7 +19,8 @@ export default function CompositionControls({ clip }: { clip: Clip }): React.JSX
   const retry = useStore(s => s.ensureReframe)
   const busy = useStore(s => s.reframeBusy[clip.id])
   const error = useStore(s => s.reframeError[clip.id])
-  const hasComposition = clip.visualLayout?.shots?.some(s => isPresenterComposition(s.composition))
+  const streamTemplate = clipStreamTemplate(clip)
+  const hasComposition = !streamTemplate && clip.visualLayout?.shots?.some(s => isPresenterComposition(s.composition))
   const hasSplits = clip.visualLayout?.shots?.some(s => s.composition?.preset === 'speakers')
   const splitsOn = clip.edit.speakerSplit !== false
   const issue = layoutReviewMessage(clip)
@@ -35,6 +37,7 @@ export default function CompositionControls({ clip }: { clip: Clip }): React.JSX
           : [{ ...replacement, start: clip.edit.start, end: clip.edit.end }] } })
     setAdding(false)
   }
+  if (streamTemplate) return <StreamClipControls clip={clip} template={streamTemplate} active={active} />
   return <div className="mt-3 space-y-2">
     {issue && <p className="text-xs text-amber-300">Перевірка компонування: {issue}</p>}
     {issue && !clip.edit.layoutChosen && !clip.visualLayout?.revision && <div className="space-y-1">
@@ -82,6 +85,52 @@ export default function CompositionControls({ clip }: { clip: Clip }): React.JSX
         <RegionForm composition={startingRegions} onSave={saveRegions} open />
       </>}
     </>}
+  </div>
+}
+
+const STREAM_ZOOMS = [['fill', 'Крупно'], ['wide', 'Ширше'], ['full', 'Уся гра']] as const
+
+/** Layout controls for a clip on the "My stream" template. */
+function StreamClipControls({ clip, template, active }: { clip: Clip; template: StreamTemplate; active: boolean }): React.JSX.Element {
+  const project = useStore(s => s.project)!
+  const update = useStore(s => s.updateClip)
+  const setLocal = useStore(s => s.updateClipLocal)
+  const apply = (next: StreamTemplate, save = true): void => {
+    const updated = applyStreamTemplate(clip, next, project.video)
+    if (save) void update(updated)
+    else setLocal(updated)
+  }
+  const applyToAll = (): void => {
+    for (const other of project.clips) {
+      if (other.id !== clip.id && clipStreamTemplate(other)) void update(applyStreamTemplate(other, template, project.video))
+    }
+  }
+  if (!active) return <div className="mt-3 space-y-2">
+    <p className="text-[11px] text-zinc-500">Зараз вибрано інше кадрування, тож шаблон «Мій стрім» не діє.</p>
+    <button type="button" className="text-xs text-zinc-300 underline underline-offset-4" onClick={() => apply(template)}>
+      Повернути шаблон «Мій стрім»
+    </button>
+  </div>
+  return <div className="mt-3 space-y-2" data-testid="stream-clip-controls">
+    <p className="text-[11px] text-zinc-500">
+      Шаблон «Мій стрім»: {template.webcam ? 'вебка зверху, гра знизу' : 'лише гра'}.
+    </p>
+    <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Скільки гри показувати">
+      {STREAM_ZOOMS.map(([value, label]) => <button key={value} type="button" aria-pressed={template.gameZoom === value}
+        onClick={() => apply({ ...template, gameZoom: value })}
+        className={`rounded-lg border px-2 py-2 text-xs transition ${template.gameZoom === value ? 'border-white/30 bg-white/[0.07] text-zinc-100' : 'border-surface-600 text-zinc-400 hover:bg-surface-800'}`}>
+        {label}
+      </button>)}
+    </div>
+    {template.gameZoom !== 'full' && <label className="block text-[11px] text-zinc-500">
+      Яку частину гри показувати: ліво ↔ право
+      <input type="range" min={0} max={100} value={Math.round(template.gameFocusX * 100)} className="mt-1 w-full"
+        onChange={e => apply({ ...template, gameFocusX: Number(e.target.value) / 100 }, false)}
+        onMouseUp={e => apply({ ...template, gameFocusX: Number((e.target as HTMLInputElement).value) / 100 })} />
+    </label>}
+    {project.clips.length > 1 && <button type="button" className="text-xs text-zinc-400 underline underline-offset-4 hover:text-zinc-200" onClick={applyToAll}>
+      Застосувати цей вигляд до всіх кліпів
+    </button>}
   </div>
 }
 

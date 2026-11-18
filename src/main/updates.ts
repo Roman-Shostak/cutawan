@@ -16,7 +16,8 @@ import type { ImportProgress, UpdateCheckResult, UpdateDownloadState } from '@sh
  * via electron-updater; source checkouts pull, rebuild and relaunch in place.
  */
 
-const REPO = 'JeremySNR/cutawan'
+// This fork checks its own releases; upstream changes are merged by hand.
+const REPO = 'Roman-Shostak/cutawan'
 const RELEASES_PAGE = `https://github.com/${REPO}/releases/latest`
 const CHECK_TIMEOUT_MS = 10_000
 

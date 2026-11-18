@@ -9,6 +9,11 @@ export interface VideoTypeOption {
 
 export const VIDEO_TYPE_OPTIONS: VideoTypeOption[] = [
   {
+    value: 'gaming-stream',
+    label: 'Ігровий стрім',
+    hint: 'Гра з вебкою з OBS — шаблон «Мій стрім»'
+  },
+  {
     value: 'auto',
     label: 'Автовизначення',
     hint: 'Cutawan вирішує для кожного кліпу'
@@ -37,13 +42,14 @@ export const VIDEO_TYPE_OPTIONS: VideoTypeOption[] = [
 
 /** Whether the pipeline should run per-clip face tracking for this video type. */
 export function shouldAnalyzeFaces(videoType: VideoType): boolean {
-  return videoType !== 'product-demo'
+  return videoType !== 'product-demo' && videoType !== 'gaming-stream'
 }
 
 /** Merge auto-detected clip content with the user's video-type choice. */
 export function resolveContentType(videoType: VideoType, detected: ClipContentType): ClipContentType {
   switch (videoType) {
     case 'product-demo':
+    case 'gaming-stream':
       return 'screencast'
     case 'talking-head':
       return 'speaker'
@@ -61,6 +67,16 @@ export function resolveContentType(videoType: VideoType, detected: ClipContentTy
 /** Default clip edit settings when highlights are first created. */
 export function initialClipEditForVideoType(videoType: VideoType): Partial<ClipEditState> {
   switch (videoType) {
+    case 'gaming-stream':
+      // The stream template replaces the layout once clips exist. Quiet
+      // stretches are often the tensest gameplay, so pauses stay in.
+      return {
+        reframeMode: 'fit-blur',
+        framing: 'manual',
+        focusX: 0.5,
+        autoZoom: false,
+        tightenCuts: false
+      }
     case 'product-demo':
       return {
         reframeMode: 'fit-letterbox',

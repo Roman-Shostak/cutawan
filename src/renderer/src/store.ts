@@ -534,11 +534,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   probeAudioTracks: async () => {
     const project = get().project
-    if (!project || project.video.audioTracks) return
+    if (!project || (project.video.audioTracks && project.video.markers)) return
     const updated = await window.cutawan.probeAudioTracks(project.id).catch(() => null)
     const current = get().project
     if (updated && current?.id === updated.id) {
-      set({ project: { ...current, video: { ...current.video, audioTracks: updated.video.audioTracks } } })
+      set({ project: { ...current, video: { ...current.video, audioTracks: updated.video.audioTracks, markers: updated.video.markers } } })
     }
   },
 

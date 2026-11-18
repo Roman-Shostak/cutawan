@@ -8,7 +8,7 @@ import { mapLimit } from './concurrency'
 import { extractThumbnail, probeVideo } from './ffmpeg'
 import { ensureTranscript } from './projectTranscript'
 import { applyGameDialogue } from './gameDialogue'
-import { dedupeClips, detectHighlights, maxDurationFor } from './highlights'
+import { dedupeClips, detectHighlights, maxDurationFor, type HighlightHints } from './highlights'
 import { discoverSourceMoments } from './sourceDiscovery'
 import { visualCandidateClip } from './visualCandidates'
 import { rankEditorialCandidates } from './editorialReview'
@@ -30,7 +30,10 @@ import {
   YtDlpError,
   type CookieAuthOptions
 } from './ytdlp'
-import { getAnalysisCredential, getImportPreferences, getModelPreferences, missingCredentialName } from '../settings'
+import { getAnalysisCredential, getImportPreferences, getModelPreferences, missingCredentialName, saveStreamTemplate, getTranscriptionVocabulary } from '../settings'
+import { trackLoudness } from './energy'
+import { applyStreamTemplate } from '@shared/streamLayout'
+import { DEFAULT_STREAM_TEMPLATE, normalizeStreamTemplate } from '@shared/composition'
 import { projectDir, saveProject, updateProject } from '../projects'
 
 export async function createProject(videoPath: string): Promise<Project> {
@@ -164,7 +167,8 @@ export async function analyzeProject(
         span: { from: 0.02, to: gameTrack === null ? 0.58 : 0.46 },
         noSpeechError: 'Мову не знайдено. Увімкніть «Шукати візуальні моменти», щоб шукати демонстрації та видимі події.',
         allowNoSpeech: options.visualDiscovery === true,
-        audioTrack: routing?.voiceTrack ?? 0
+        audioTrack: routing?.voiceTrack ?? 0,
+        vocabulary: getTranscriptionVocabulary()
       },
       onProgress,
       signal
@@ -196,6 +200,14 @@ export async function analyzeProject(
       p.visualDiscovery = options.visualDiscovery === true
       p.discoveryReport = discovery
     })
+    // Stream evidence: the creator's markers, how loud the game is, and what
+    // the game and a friend in party chat said.
+    if (gameTrack !== null) onProgress({ stage: 'analyze', progress: 0.59, message: 'Слухаю звук гри…' })
+    const hints: HighlightHints = {
+      markers: project.video.markers ?? [],
+      gameLoudness: gameTrack !== null ? await timed('game-loudness', () => trackLoudness(project.video.path, gameTrack, signal)) : null,
+      otherVoices: (project.gameDialogue?.lines ?? []).map((l) => ({ start: l.start, end: l.end, text: l.translation || l.text, speaker: l.speaker }))
+    }
     onProgress({ stage: 'analyze', progress: 0.6, message: 'Шукаю моменти в мові…' })
     let clips = transcript.segments.length ? await timed('highlights', () => detectHighlights(
       apiKey,
@@ -203,14 +215,15 @@ export async function analyzeProject(
       transcript,
       options,
       project.video.durationSec,
-      signal
+      signal,
+      hints
     )) : []
     for (const clip of clips) clip.discovery = { origin: 'transcript' }
     clips.push(...visualClips)
     if (clips.length === 0) {
       throw new Error(discovery?.status === 'failed'
-        ? 'The visual scan failed and no spoken moments were found. Check the connection and retry.'
-        : 'No complete moments were found within the selected length. Try a longer clip length or different instructions. Visual sampling can miss brief events.')
+        ? 'Візуальний пошук не вдався, а моментів у мові не знайдено. Перевірте з’єднання й повторіть.'
+        : 'У вибраній довжині не знайдено завершених моментів. Спробуйте довшу довжину кліпу чи інші інструкції. Вибіркові кадри можуть пропустити короткі події.')
     }
 
     // Review the actual planned edit and repair explicitly missing visual payoffs.
@@ -251,10 +264,11 @@ export async function analyzeProject(
         message: 'Оцінюю візуал…'
       })
     }), { clips: clips.length })
-    clips = clips.filter(clip => !incomplete.has(clip.id))
-    if (!clips.length) throw new Error('The candidate clips promised demonstrations whose payoffs could not be included. Try a longer clip length.')
-    clips = clips.filter(clip => !incoherent.has(clip.id))
-    if (!clips.length) throw new Error('The candidate clips did not form complete, self-contained stories. Try a longer clip length or a different source.')
+    // The creator's own marked moments stay whatever the review thinks.
+    clips = clips.filter(clip => clip.streamMarker !== undefined || !incomplete.has(clip.id))
+    if (!clips.length) throw new Error('Кліпи обіцяли демонстрації, розв’язку яких не вдалося вмістити. Спробуйте довшу довжину кліпу.')
+    clips = clips.filter(clip => clip.streamMarker !== undefined || !incoherent.has(clip.id))
+    if (!clips.length) throw new Error('Кліпи не склалися в завершені самодостатні історії. Спробуйте довшу довжину кліпу чи інше відео.')
     clips.sort((a, b) => b.viralityScore - a.viralityScore)
     // Freeze the old policy on this exact surviving pool before the independent review.
     const baselineClips = dedupeClips(clips)
@@ -275,12 +289,19 @@ export async function analyzeProject(
         p.editorialRanking = ranked.report
       })
       clips = ranked.clips
-      if (!clips.length) throw new Error('Editorial review found incomplete or misleading selections. Try a longer clip length or different instructions; the review report has been saved.')
+      if (!clips.length) throw new Error('Редакторська перевірка знайшла лише неповні чи оманливі фрагменти. Спробуйте довшу довжину кліпу чи інші інструкції; звіт перевірки збережено.')
     } else clips = baselineClips
 
     // Layouts for the top clips run in the background once the list is on
     // screen (see backgroundReframe.ts); every clip starts pending.
     for (const clip of clips) clip.reframeStatus = 'pending'
+    // Gaming streams: every clip on the creator's template, no face tracking
+    // or AI layout review needed. The template becomes the next default.
+    if (options.videoType === 'gaming-stream') {
+      const template = normalizeStreamTemplate(options.streamTemplate) ?? DEFAULT_STREAM_TEMPLATE
+      clips = clips.map(clip => applyStreamTemplate({ ...clip, broll: [] }, template, project.video))
+      saveStreamTemplate(template)
+    }
     project.clips = clips
     project.prompt = options.prompt
     project.videoType = options.videoType
@@ -296,7 +317,7 @@ export async function analyzeProject(
       if (!p.rankingEnabled) delete p.editorialRanking
     })
 
-    if (options.broll) {
+    if (options.broll && options.videoType !== 'gaming-stream') {
       onProgress({ stage: 'broll', progress: 0.82, message: 'Шукаю зображення для вставок…' })
       let brolled = 0
       await timed('broll', () => mapLimit(clips, 3, async (clip) => {

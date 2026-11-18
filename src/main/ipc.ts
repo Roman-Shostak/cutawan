@@ -21,7 +21,7 @@ import { visibleChatLines, visibleGameLines } from '@shared/gameDialogue'
 import { analyzeProject, createProject, createProjectFromUrl } from './pipeline'
 import { captionWholeVideo } from './pipeline/wholeVideo'
 import { downloadGpuFfmpeg } from './pipeline/encoders'
-import { probeAudioTracks, probeVideo } from './pipeline/ffmpeg'
+import { probeTracksAndMarkers, probeVideo } from './pipeline/ffmpeg'
 import { getTimeline } from './pipeline/timeline'
 import { renderClip } from './pipeline/render'
 import { ensureClipReframe } from './pipeline/reframe'
@@ -32,7 +32,7 @@ import { clearImportCookiesFile, installImportCookiesFile } from './cookies'
 import { checkForUpdates, downloadUpdate, installUpdate, updateFromSource, getUpdateDownloadState, onUpdateDownloadState, openUpdateInstaller, cancelUpdateDownload } from './updates'
 import { UpdateActivity } from './updateActivity'
 import { isMediaPathAllowed } from './mediaAccess'
-import { sanitizeFileName, uniqueOutputPath } from './exportPath'
+import { exportBaseName, uniqueOutputPath } from './exportPath'
 import { deleteProject, listProjects, loadProject, updateProject } from './projects'
 import {
   getAnalysisCredential,
@@ -229,9 +229,12 @@ export function registerIpcHandlers(): void {
 
   handle('project:probeAudioTracks', async (_e, projectId: string) => {
     const project = await loadProject(projectId)
-    if (project.video.audioTracks) return project
-    const audioTracks = await probeAudioTracks(project.video.path)
-    return updateProject(projectId, (p) => { p.video.audioTracks = audioTracks })
+    if (project.video.audioTracks && project.video.markers) return project
+    const probed = await probeTracksAndMarkers(project.video.path)
+    return updateProject(projectId, (p) => {
+      p.video.audioTracks = probed.audioTracks
+      p.video.markers = probed.markers
+    })
   })
 
   handle('project:updateGameLine', async (_e, projectId: string, lineId: string, patch: GameLinePatch) => {
@@ -285,7 +288,7 @@ export function registerIpcHandlers(): void {
     if (runningExports.has(clip.id)) throw new Error('Цей кліп уже експортується.')
 
     const suffix = clip.edit.aspect === 'original' ? '' : ` (${clip.edit.aspect.replace(':', 'x')})`
-    const outputPath = uniqueOutputPath(opts.outputDir, `${sanitizeFileName(clip.title)}${suffix}`)
+    const outputPath = uniqueOutputPath(opts.outputDir, `${exportBaseName(project, clip)}${suffix}`)
     const prefs = getExportPreferences()
     const sizeTargetBytes = sizeTargetBytesFromMb(prefs.sizeTargetMb)
     const branding = getBrandingSettings()

@@ -50,7 +50,7 @@ vi.mock('../src/main/projects', () => ({
     return p
   })
 }))
-vi.mock('../src/main/settings', () => ({ getAnalysisCredential: () => 'k', getModelPreferences: () => ({}) }))
+vi.mock('../src/main/settings', () => ({ getAnalysisCredential: () => 'k', getModelPreferences: () => ({}), getTranscriptionVocabulary: () => '' }))
 
 const { ensureGameDialogue } = await import('../src/main/pipeline/gameDialogue')
 

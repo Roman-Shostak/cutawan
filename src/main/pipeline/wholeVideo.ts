@@ -16,7 +16,7 @@ import { extractThumbnail } from './ffmpeg'
 import { analyzeClipFocus } from './faces'
 import { ensureTranscript } from './projectTranscript'
 import { applyGameDialogue } from './gameDialogue'
-import { getAnalysisCredential, getModelPreferences } from '../settings'
+import { getAnalysisCredential, getModelPreferences, getTranscriptionVocabulary } from '../settings'
 import { usesLocalTranscription } from '../subscription'
 import { projectDir, updateProject } from '../projects'
 
@@ -65,7 +65,8 @@ export async function captionWholeVideo(
         span: { from: 0.02, to: options.audioRouting?.gameTrack != null ? 0.58 : 0.7 },
         noSpeechError:
           'У цьому відео не знайдено мови, тож субтитрувати нічого.',
-        audioTrack: options.audioRouting?.voiceTrack ?? 0
+        audioTrack: options.audioRouting?.voiceTrack ?? 0,
+        vocabulary: getTranscriptionVocabulary()
       },
       onProgress,
       signal

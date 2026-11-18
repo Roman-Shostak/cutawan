@@ -450,7 +450,8 @@ export default function EditorScreen(): React.JSX.Element {
           </Section>
         )}
 
-        {!wholeVideo && (
+        {/* Image inserts are off in this fork; older clips that have some keep their controls. */}
+        {!wholeVideo && clip.broll.length > 0 && (
         <Section icon={ImagePlus} title="Вставки (B-roll)">
           {clip.broll.length === 0 ? (
             <p className="text-xs leading-relaxed text-zinc-500">

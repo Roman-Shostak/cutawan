@@ -159,6 +159,8 @@ export interface CaptionOptions {
   gameLines?: Array<{ start: number; end: number; text: string }>
   /** Metrics of the game-subtitle font, for the em-size conversion. */
   gameFontMetrics?: FontMetrics | null
+  /** Top edge for game subtitles set by the layout (stream template), share of height. */
+  gameTopY?: number
 }
 
 export function buildAss(transcript: Transcript, opts: CaptionOptions): string {
@@ -235,7 +237,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     const end = Math.min(clipDur, line.end - opts.clipStart)
     if (end - start < 0.05) continue
     // While the hook title holds the top of the frame, drop below it.
-    const top = start < titleShown ? game.belowTitleY : game.positionY
+    const top = opts.gameTopY ?? (start < titleShown ? game.belowTitleY : game.positionY)
     lines.push(`Dialogue: 2,${assTime(start)},${assTime(end)},Game,,0,0,${Math.round(opts.height * top)},,{\\fad(80,120)}${escapeAss(line.text)}`)
   }
 

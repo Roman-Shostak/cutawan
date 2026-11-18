@@ -159,3 +159,54 @@ describe('detectHighlights end to end (scripted model)', () => {
     expect(clips[1].suggestedEnd).toBeLessThanOrEqual(VIDEO)
   })
 })
+
+describe('stream hints', () => {
+  const transcript = makeTranscript(
+    Array.from({ length: 30 }, (_, i) => `sentence ${i} word three four five.`),
+    { wordSec: 0.3, gapSec: 0.1, sentenceGapSec: 0.4 }
+  )
+  const sentences = transcriptSentences(transcript)
+  const captured: string[] = []
+  beforeEach(() => {
+    captured.length = 0
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { messages: Array<{ role: string; content: string }>; response_format: { json_schema: { name: string } } }
+      const schema = body.response_format.json_schema.name
+      captured.push(body.messages.find((m) => m.role === 'user')?.content ?? '')
+      const payload = schema === 'viral_clips'
+        ? { clips: [{ start: sentences[1].start, end: sentences[5].end, title: 'Early', hook: 'h', summary: 's', payoff: 'p', virality_score: 60, virality_reason: 'r', hashtags: [] }] }
+        : { endings: [{ index: 0, ends_with_payoff: true, better_end: 0, reason: 'ok' }, { index: 1, ends_with_payoff: true, better_end: 0, reason: 'ok' }, { index: 2, ends_with_payoff: true, better_end: 0, reason: 'ok' }] }
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(payload) } }] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const options = { prompt: '', clipLength: 'auto' as const, broll: false, hookFirst: false, videoType: 'gaming-stream' as const }
+
+  it('shows the model markers, game voices and loud game moments', async () => {
+    const loudness = Array.from({ length: Math.ceil(transcript.durationSec) + 10 }, (_, s) => (s === Math.floor(sentences[3].start) + 1 ? 0.95 : 0.3))
+    await detectHighlights('key', 'model', transcript, options, transcript.durationSec + 10, undefined, {
+      markers: [sentences[4].end + 1],
+      gameLoudness: loudness,
+      otherVoices: [{ start: 3, end: 4, text: 'Лягай!', speaker: 'game' }, { start: 6, end: 7, text: 'Брат, дивись', speaker: 'chat' }]
+    })
+    const prompt = captured[0]
+    expect(prompt).toContain('highlight" hotkey')
+    expect(prompt).toContain('Game: Лягай!')
+    expect(prompt).toContain('Friend: Брат, дивись')
+    expect(prompt).toContain('[game: intense]')
+  })
+
+  it('claims a covering clip for a marker and cuts a new clip around an uncovered one', async () => {
+    const covered = sentences[3].end
+    const lone = sentences[24].end + 1
+    const clips = await detectHighlights('key', 'model', transcript, options, transcript.durationSec + 10, undefined, { markers: [covered, lone] })
+    const byMarker = new Map(clips.map((c) => [c.streamMarker, c]))
+    expect(byMarker.get(covered)?.title).toBe('Early')
+    expect(byMarker.get(covered)?.viralityScore).toBeGreaterThanOrEqual(90)
+    const fresh = byMarker.get(lone)!
+    expect(fresh.edit.start).toBeLessThan(lone)
+    expect(fresh.edit.end).toBeGreaterThan(lone)
+    expect(fresh.viralityReason).toContain('позначили')
+  })
+})

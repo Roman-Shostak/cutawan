@@ -4,7 +4,6 @@ import {
   Captions,
   Crop,
   Film,
-  ImagePlus,
   Link2,
   Loader2,
   ScanFace,
@@ -20,6 +19,8 @@ import { useStore } from '../store'
 import { formatDuration, formatBytes, pluralUk } from '../lib/format'
 import MissingSourceBanner from './MissingSourceBanner'
 import AudioTracksPanel, { defaultAudioRouting } from './AudioTracksPanel'
+import StreamTemplatePanel from './StreamTemplatePanel'
+import { DEFAULT_STREAM_TEMPLATE, normalizeStreamTemplate } from '@shared/composition'
 import DiscoverySummary from './DiscoverySummary'
 import { EditorialRankingSummary } from './EditorialSummary'
 import { SOURCE_DISCOVERY_BUDGET } from '@shared/sourceAnalysis'
@@ -27,6 +28,7 @@ import { EDITORIAL_BUDGET, editorialReportMatchesClips } from '@shared/editorial
 import type {
   AspectRatio,
   AudioRouting,
+  StreamTemplate,
   BrowserCookieSource,
   ClipLengthPreference,
   ProjectMode,
@@ -293,9 +295,12 @@ function SetupPanel(): React.JSX.Element {
   const [captionZoom, setCaptionZoom] = useState(false)
   const [prompt, setPrompt] = useState(project.prompt)
   const [clipLength, setClipLength] = useState<ClipLengthPreference>('auto')
-  const [videoType, setVideoType] = useState<VideoType>(project.videoType ?? 'auto')
-  // Off by default: B-roll costs extra LLM/image calls and splits opinion.
-  const [broll, setBroll] = useState(false)
+  const [videoType, setVideoType] = useState<VideoType>(project.videoType ?? 'gaming-stream')
+  // Image inserts are hidden in this fork: they do not suit gameplay.
+  const broll = false
+  const [streamTemplate, setStreamTemplate] = useState<StreamTemplate>(
+    () => normalizeStreamTemplate(settings?.streamTemplate) ?? DEFAULT_STREAM_TEMPLATE
+  )
   // Off by default: hook-first trimming rewrites clip starts with an extra LLM pass.
   const [hookFirst, setHookFirst] = useState(false)
   const [visualDiscovery, setVisualDiscovery] = useState(project.visualDiscovery ?? false)
@@ -393,32 +398,35 @@ function SetupPanel(): React.JSX.Element {
           {mode === 'clips' ? (
             <>
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
-              <label className="flex items-start gap-3 text-sm font-semibold">
-                <input type="checkbox" checked={editorialRanking} onChange={e => setEditorialRanking(e.target.checked)}
-                  className="mt-1" data-testid="editorial-ranking-toggle" />
-                <span>Перевіряти й ранжувати цілісні історії <span className="font-normal text-zinc-400">(бета)</span>
-                  <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-400">
-                    Перевіряє контекст, розв’язку та повтори ідей за текстом і вибірковими кадрами. До {EDITORIAL_BUDGET.maxReviewCalls + EDITORIAL_BUDGET.maxDiversityCalls} додаткових запитів на аналіз плюс повторні спроби провайдера.
-                    {' '}Оцінки — це судження моделі; переглядайте кліпи перед експортом.
-                  </span>
-                </span>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <Film size={15} className="text-accent-400" />
+                Що це за відео?
               </label>
-              <EditorialRankingSummary report={project.editorialRanking} earlierAttempt={!!project.editorialRanking && !editorialReportMatchesClips(project)} />
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                Допомагає Cutawan вибрати компонування 9:16: кроп і зум для людини в кадрі, поля для записів екрана.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {VIDEO_TYPE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-testid={`video-type-${opt.value}`}
+                    onClick={() => setVideoType(opt.value)}
+                    className={`rounded-xl border px-3 py-2.5 text-left transition ${
+                      videoType === opt.value
+                        ? 'border-white/30 bg-white/[0.07] text-zinc-100'
+                        : 'border-surface-600 bg-surface-850 text-zinc-400 hover:border-surface-600 hover:bg-surface-800'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{opt.label}</div>
+                    <div className="mt-0.5 text-[11px] leading-snug text-zinc-500">{opt.hint}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
-              <label className="flex items-start gap-3 text-sm font-semibold">
-                <input type="checkbox" checked={visualDiscovery} onChange={e => setVisualDiscovery(e.target.checked)}
-                  className="mt-1" data-testid="visual-discovery-toggle" />
-                <span>Шукати візуальні моменти <span className="font-normal text-zinc-400">(бета)</span>
-                  <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-400">
-                    Шукає демонстрації, розкриття та реакції, зокрема фрагменти без мови. Аналізує кадри з усього відео через ваше підключення до ШІ — до {SOURCE_DISCOVERY_BUDGET.maxAnalysisRequests} додаткових
-                    {' '}запитів на аналіз плюс повторні спроби провайдера. Короткі події між кадрами можуть бути пропущені.
-                    {' '}Перевірка й кадрування знайдених кліпів потребує додаткових запитів.
-                  </span>
-                </span>
-              </label>
-              <DiscoverySummary report={project.discoveryReport} earlierAttempt={!!project.discoveryReport?.generationId && project.discoveryReport.generationId !== project.clipsGenerationId} />
-            </div>
+            {videoType === 'gaming-stream' && (
+              <StreamTemplatePanel project={project} template={streamTemplate} onChange={setStreamTemplate} />
+            )}
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Wand2 size={15} className="text-accent-400" />
@@ -432,31 +440,33 @@ function SetupPanel(): React.JSX.Element {
                 className="mt-3 w-full resize-none rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none"
               />
             </div>
-  
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
-              <button
-                onClick={() => setBroll(!broll)}
-                className="flex w-full items-center justify-between gap-4 text-left"
-              >
-                <span className="min-w-0">
-                  <span className="flex items-center gap-2 text-sm font-semibold">
-                    <ImagePlus size={15} className="text-accent-400" />
-                    ШІ-вставки зображень (B-roll)
-                  </span>
-                  <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
-                    Коли ви згадуєте персонажа, людину чи місце («Йода»), відповідне зображення з’являється поверх відео саме на цьому слові. Кожну вставку можна змінити в кліпі.
-                  </span>
-                </span>
-                <span
-                  className={`relative h-5 w-9 shrink-0 rounded-full transition ${broll ? 'bg-zinc-100' : 'bg-surface-600'}`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-4 w-4 rounded-full transition-all ${broll ? 'left-[18px] bg-zinc-900' : 'left-0.5 bg-white'}`}
-                  />
-                </span>
-              </button>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <Clock size={15} className="text-accent-400" />
+                Бажана довжина кліпу
+              </label>
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {LENGTH_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setClipLength(opt.value)}
+                    className={`rounded-xl border px-3 py-2.5 text-center transition ${
+                      clipLength === opt.value
+                        ? 'border-white/30 bg-white/[0.07] text-zinc-100'
+                        : 'border-surface-600 bg-surface-850 text-zinc-400 hover:border-surface-600 hover:bg-surface-800'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{opt.label}</div>
+                    <div className="mt-0.5 text-[11px] text-zinc-500">{opt.hint}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-  
+            <details className="group rounded-2xl border border-surface-700 bg-surface-900 p-5" data-testid="advanced-options">
+              <summary className="cursor-pointer text-sm font-semibold text-zinc-300">
+                Додатково <span className="font-normal text-zinc-500">(бета-функції й додаткові платні запити)</span>
+              </summary>
+              <div className="mt-4 flex flex-col gap-5">
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <button
                 onClick={() => setHookFirst(!hookFirst)}
@@ -480,56 +490,35 @@ function SetupPanel(): React.JSX.Element {
                 </span>
               </button>
             </div>
-  
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <Film size={15} className="text-accent-400" />
-                Що це за відео?
+              <label className="flex items-start gap-3 text-sm font-semibold">
+                <input type="checkbox" checked={visualDiscovery} onChange={e => setVisualDiscovery(e.target.checked)}
+                  className="mt-1" data-testid="visual-discovery-toggle" />
+                <span>Шукати візуальні моменти <span className="font-normal text-zinc-400">(бета)</span>
+                  <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-400">
+                    Шукає демонстрації, розкриття та реакції, зокрема фрагменти без мови. Аналізує кадри з усього відео через ваше підключення до ШІ — до {SOURCE_DISCOVERY_BUDGET.maxAnalysisRequests} додаткових
+                    {' '}запитів на аналіз плюс повторні спроби провайдера. Короткі події між кадрами можуть бути пропущені.
+                    {' '}Перевірка й кадрування знайдених кліпів потребує додаткових запитів.
+                  </span>
+                </span>
               </label>
-              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                Допомагає Cutawan вибрати компонування 9:16: кроп і зум для людини в кадрі, поля для записів екрана.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {VIDEO_TYPE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setVideoType(opt.value)}
-                    className={`rounded-xl border px-3 py-2.5 text-left transition ${
-                      videoType === opt.value
-                        ? 'border-white/30 bg-white/[0.07] text-zinc-100'
-                        : 'border-surface-600 bg-surface-850 text-zinc-400 hover:border-surface-600 hover:bg-surface-800'
-                    }`}
-                  >
-                    <div className="text-sm font-medium">{opt.label}</div>
-                    <div className="mt-0.5 text-[11px] leading-snug text-zinc-500">{opt.hint}</div>
-                  </button>
-                ))}
-              </div>
+              <DiscoverySummary report={project.discoveryReport} earlierAttempt={!!project.discoveryReport?.generationId && project.discoveryReport.generationId !== project.clipsGenerationId} />
             </div>
-  
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <Clock size={15} className="text-accent-400" />
-                Бажана довжина кліпу
+              <label className="flex items-start gap-3 text-sm font-semibold">
+                <input type="checkbox" checked={editorialRanking} onChange={e => setEditorialRanking(e.target.checked)}
+                  className="mt-1" data-testid="editorial-ranking-toggle" />
+                <span>Перевіряти й ранжувати цілісні історії <span className="font-normal text-zinc-400">(бета)</span>
+                  <span className="mt-1 block text-xs font-normal leading-relaxed text-zinc-400">
+                    Перевіряє контекст, розв’язку та повтори ідей за текстом і вибірковими кадрами. До {EDITORIAL_BUDGET.maxReviewCalls + EDITORIAL_BUDGET.maxDiversityCalls} додаткових запитів на аналіз плюс повторні спроби провайдера.
+                    {' '}Оцінки — це судження моделі; переглядайте кліпи перед експортом.
+                  </span>
+                </span>
               </label>
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {LENGTH_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setClipLength(opt.value)}
-                    className={`rounded-xl border px-3 py-2.5 text-center transition ${
-                      clipLength === opt.value
-                        ? 'border-white/30 bg-white/[0.07] text-zinc-100'
-                        : 'border-surface-600 bg-surface-850 text-zinc-400 hover:border-surface-600 hover:bg-surface-800'
-                    }`}
-                  >
-                    <div className="text-sm font-medium">{opt.label}</div>
-                    <div className="mt-0.5 text-[11px] text-zinc-500">{opt.hint}</div>
-                  </button>
-                ))}
-              </div>
+              <EditorialRankingSummary report={project.editorialRanking} earlierAttempt={!!project.editorialRanking && !editorialReportMatchesClips(project)} />
             </div>
+              </div>
+            </details>
             </>
           ) : (
             <CaptionVideoOptions
@@ -563,7 +552,8 @@ function SetupPanel(): React.JSX.Element {
                 data-testid="start-button"
                 onClick={() =>
                   mode === 'clips'
-                    ? void analyze({ prompt, clipLength, broll, hookFirst, videoType, visualDiscovery, editorialRanking, ...audioOptions })
+                    ? void analyze({ prompt, clipLength, broll, hookFirst, videoType, visualDiscovery, editorialRanking, ...audioOptions,
+                        ...(videoType === 'gaming-stream' ? { streamTemplate } : {}) })
                     : void captionWholeVideo({
                         aspect: captionAspect,
                         followSpeaker,

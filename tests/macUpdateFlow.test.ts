@@ -15,7 +15,7 @@ const originalPlatform = process.platform
 const originalArch = process.arch
 const asset = {
   name: 'Cutawan-1.2.3-arm64.dmg', size: 123, digest: `sha256:${'a'.repeat(64)}`,
-  browser_download_url: 'https://github.com/JeremySNR/cutawan/releases/download/v1.2.3/Cutawan-1.2.3-arm64.dmg'
+  browser_download_url: 'https://github.com/Roman-Shostak/cutawan/releases/download/v1.2.3/Cutawan-1.2.3-arm64.dmg'
 }
 
 beforeEach(() => {
@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.stubEnv('CUTAWAN_FORCE_DEV_UPDATES', '')
   vi.stubEnv('CUTAWAN_FAKE_LATEST', '')
   vi.stubGlobal('fetch', vi.fn().mockImplementation(() => new Response(JSON.stringify({
-    tag_name: 'v1.2.3', assets: [asset], html_url: 'https://github.com/JeremySNR/cutawan/releases/tag/v1.2.3'
+    tag_name: 'v1.2.3', assets: [asset], html_url: 'https://github.com/Roman-Shostak/cutawan/releases/tag/v1.2.3'
   }))))
   mocks.verify.mockResolvedValue(false)
   mocks.download.mockResolvedValue('/tmp/verified.dmg')

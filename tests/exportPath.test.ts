@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { join } from 'node:path'
-import { sanitizeFileName, uniqueOutputPath } from '../src/main/exportPath'
+import { exportBaseName, sanitizeFileName, uniqueOutputPath } from '../src/main/exportPath'
 
 describe('sanitizeFileName', () => {
   it('strips characters that are invalid on any OS', () => {
@@ -30,5 +30,23 @@ describe('uniqueOutputPath', () => {
     expect(uniqueOutputPath('/out', 'My Clip', (p) => taken.has(p))).toBe(
       join('/out', 'My Clip (3).mp4')
     )
+  })
+})
+
+describe('exportBaseName', () => {
+  const project = {
+    createdAt: Date.UTC(2026, 0, 2, 12),
+    video: { fileName: '2026-11-18 20-31-05.mkv' },
+    clips: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+    gameDialogue: { context: 'The Last of Us: Part II' }
+  } as unknown as Parameters<typeof exportBaseName>[0]
+
+  it('names exports by recording date, game, number and title', () => {
+    expect(exportBaseName(project, { id: 'c', title: 'Джоел ледь не помер?' })).toBe('2026-11-18_The Last of Us Part II_03_Джоел ледь не помер')
+  })
+
+  it('falls back to the project date and skips a missing game', () => {
+    const plain = { ...project, video: { fileName: 'stream.mp4' }, gameDialogue: null } as unknown as typeof project
+    expect(exportBaseName(plain, { id: 'a', title: 'Клік' })).toBe('2026-01-02_01_Клік')
   })
 })

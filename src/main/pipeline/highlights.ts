@@ -148,7 +148,7 @@ function formatTimestamp(sec: number): string {
  * and end, plus a delivery tag on the most and least energetic lines.
  * Exported for tests.
  */
-export function formatTranscriptForModel(sentences: Sentence[]): string {
+export function formatTranscriptForModel(sentences: Sentence[], gameLoudness?: number[] | null): string {
   return sentences
     .map((s) => {
       const delivery =
@@ -159,9 +159,81 @@ export function formatTranscriptForModel(sentences: Sentence[]): string {
             : s.energy <= 0.2
               ? ' [delivery: subdued]'
               : ''
-      return `[${formatTimestamp(s.start)} - ${formatTimestamp(s.end)}] ${s.text}${delivery}`
+      const game = gameLoudness && peakLevel(gameLoudness, s.start, s.end) >= GAME_INTENSE_LEVEL ? ' [game: intense]' : ''
+      return `[${formatTimestamp(s.start)} - ${formatTimestamp(s.end)}] ${s.text}${delivery}${game}`
     })
     .join('\n')
+}
+
+/**
+ * Extra evidence for stream recordings: the creator's own markers, the
+ * game track's loudness, and what other voices (game characters, a friend
+ * in party chat) said. All optional; plain videos pass none.
+ */
+export interface HighlightHints {
+  /** Source seconds where the creator pressed a marker hotkey. */
+  markers?: number[]
+  /** Per-second loudness percentile of the game track (0..1). */
+  gameLoudness?: number[] | null
+  /** Lines from the game track, already translated. */
+  otherVoices?: Array<{ start: number; end: number; text: string; speaker?: 'game' | 'chat' }>
+}
+
+/** Game-track percentile from which a moment counts as intense. */
+const GAME_INTENSE_LEVEL = 0.9
+/** At most this many other-voice lines go into the prompt. */
+const MAX_OTHER_VOICE_LINES = 400
+/** Score for clips around the creator's own markers: they chose these. */
+const MARKER_SCORE = 90
+const MARKER_REASON = 'Ви позначили цей момент під час стріму.'
+/** A marker is pressed just after the moment: clips reach this far back from it. */
+export const MARKER_LOOKBACK_SEC = 30
+/** And end this long after it, so the reaction is in. */
+export const MARKER_TAIL_SEC = 8
+
+function peakLevel(levels: number[], start: number, end: number): number {
+  let peak = 0
+  for (let s = Math.max(0, Math.floor(start)); s <= Math.min(levels.length - 1, Math.ceil(end)); s++) peak = Math.max(peak, levels[s] ?? 0)
+  return peak
+}
+
+/** Stretches of at least 3 s where the game is very loud and the creator is silent. */
+export function intenseSilentStretches(levels: number[], sentences: Sentence[]): Array<{ start: number; end: number }> {
+  const spoken = (t: number): boolean => sentences.some((s) => t >= s.start - 0.5 && t <= s.end + 0.5)
+  const out: Array<{ start: number; end: number }> = []
+  let from = -1
+  for (let t = 0; t <= levels.length; t++) {
+    const hot = t < levels.length && levels[t] >= GAME_INTENSE_LEVEL && !spoken(t + 0.5)
+    if (hot && from < 0) from = t
+    if (!hot && from >= 0) {
+      if (t - from >= 3) out.push({ start: from, end: t })
+      from = -1
+    }
+  }
+  return out.slice(0, 40)
+}
+
+/** Prompt sections for the hints; empty when there are none. */
+export function formatHintsForModel(hints: HighlightHints | undefined, sentences: Sentence[]): string[] {
+  if (!hints) return []
+  const parts: string[] = []
+  const markers = hints.markers ?? []
+  if (markers.length) {
+    parts.push(`The streamer pressed a "highlight" hotkey during the stream at these times (seconds): ${markers.map((m) => m.toFixed(1)).join(', ')}. Each press comes just AFTER something worth clipping happened, usually within the previous ${MARKER_LOOKBACK_SEC} seconds. Every marked moment MUST be covered by a clip that starts before the moment and ends a few seconds after the press; score these clips high, the streamer chose them.`)
+  }
+  const voices = (hints.otherVoices ?? []).slice(0, MAX_OTHER_VOICE_LINES)
+  if (voices.length) {
+    parts.push(`Other voices on the game audio (context only — clip boundaries must still use the streamer's line times above). "Game" is a character or narrator, "Friend" is a player talking in party chat:\n${voices
+      .map((v) => `[${formatTimestamp(v.start)} - ${formatTimestamp(v.end)}] ${v.speaker === 'chat' ? 'Friend' : 'Game'}: ${v.text}`).join('\n')}`)
+  }
+  const stretches = hints.gameLoudness ? intenseSilentStretches(hints.gameLoudness, sentences) : []
+  if (stretches.length) {
+    parts.push(`Loud game action while the streamer is silent (fights, explosions, chases) — worth including inside a clip when the lines around it set it up or react to it: ${stretches.map((r) => `${r.start}s-${r.end}s`).join(', ')}.`)
+  }
+  if (hints.gameLoudness) {
+    parts.push('Lines tagged [game: intense] coincide with the loudest game moments of the stream.')
+  }
+  return parts
 }
 
 const MIN_CLIP_SEC = 8
@@ -608,25 +680,28 @@ export async function detectHighlights(
   transcript: Transcript,
   options: AnalyzeOptions,
   videoDurationSec: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  hints?: HighlightHints
 ): Promise<Clip[]> {
   // LLM output is nondeterministic: occasionally it returns an empty list on
   // perfectly clippable material, so retry once with a firmer instruction.
-  const first = await requestHighlights(apiKey, model, transcript, options, videoDurationSec, false, signal)
+  const first = await requestHighlights(apiKey, model, transcript, options, videoDurationSec, false, signal, hints)
   const clips =
     first.length > 0
       ? first
-      : await requestHighlights(apiKey, model, transcript, options, videoDurationSec, true, signal)
+      : await requestHighlights(apiKey, model, transcript, options, videoDurationSec, true, signal, hints)
   const maxDuration = maxDurationFor(options.clipLength)
   const refined = await refineClipEndings(apiKey, model, transcript, clips, videoDurationSec, maxDuration, signal)
   const trimmed = options.hookFirst
     ? await refineClipStarts(apiKey, model, transcript, refined, signal)
     : refined
   // Refinement can pull two clips onto the same landing beat; dedupe again.
+  // A creator's marker clip may run past the length preference (it can sit
+  // in silent gameplay with no sentence to cut on); every other check holds.
   return dedupeClips(trimmed.filter((c) =>
     Number.isFinite(c.edit.start) && Number.isFinite(c.edit.end) &&
     c.edit.start >= 0 && c.edit.end <= videoDurationSec &&
-    c.edit.end > c.edit.start && c.edit.end - c.edit.start <= maxDuration
+    c.edit.end > c.edit.start && (c.edit.end - c.edit.start <= maxDuration || c.streamMarker !== undefined)
   ))
 }
 
@@ -637,13 +712,14 @@ async function requestHighlights(
   options: AnalyzeOptions,
   videoDurationSec: number,
   insist: boolean,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  hints?: HighlightHints
 ): Promise<Clip[]> {
   // One sentence per line. Whisper segments break mid-sentence, and a model
   // that only sees segment boundaries can only propose segment boundaries;
   // sentence lines let it cut where a thought actually starts and stops.
   const sentences = transcriptSentences(transcript)
-  const transcriptText = formatTranscriptForModel(sentences)
+  const transcriptText = formatTranscriptForModel(sentences, hints?.gameLoudness)
 
   const targetCount = targetClipCount(videoDurationSec)
 
@@ -660,6 +736,7 @@ async function requestHighlights(
     options.prompt.trim()
       ? `The creator gave these special instructions, which take priority when choosing moments: "${options.prompt.trim()}"`
       : '',
+    ...formatHintsForModel(hints, sentences),
     'Transcript, one sentence per line, each prefixed with [start - end] in seconds from the start of the video. Start every clip on the start time of a line and end it on the end time of a line:',
     transcriptText
   ]
@@ -698,9 +775,8 @@ async function requestHighlights(
     console.error('[highlights] raw LLM response:', JSON.stringify(res, null, 2))
   }
 
-  const clips: Clip[] = []
-  for (const raw of res.clips ?? []) {
-    if (!Number.isFinite(raw.start) || !Number.isFinite(raw.end)) continue
+  const build = (raw: RawHighlight, marker?: number): Clip | null => {
+    if (!Number.isFinite(raw.start) || !Number.isFinite(raw.end)) return null
     let start = Math.max(0, Math.min(raw.start, videoDurationSec - 1))
     let end = Math.max(start + 1, Math.min(raw.end, videoDurationSec))
     // Open on the sentence the model pointed into (plus a little pre-roll)
@@ -714,24 +790,27 @@ async function requestHighlights(
     // reach a target length (padding tanks completion rate). We only enforce
     // the hard upper cap, trimming an over-long clip back to the last sentence
     // that lands within the cap.
-    if (end - start > maxDur) {
+    if (end - start > maxDur && marker !== undefined) {
+      // Keep the marked moment and the reaction after it; drop lead-in.
+      start = Math.max(start, Math.min(marker - 3, end - maxDur))
+    } else if (end - start > maxDur) {
       const capTarget = start + maxDur
       const lastSentenceEnd = [...sentenceEnds]
         .reverse()
         .find((e) => padSpeechEnd(e, transcript, videoDurationSec, END_POST_ROLL_SEC) <= capTarget && e > start + MIN_CLIP_SEC)
       // If no complete sentence fits, reject the candidate instead of cutting
       // speech at an arbitrary cap to manufacture a short clip.
-      if (lastSentenceEnd === undefined) continue
+      if (lastSentenceEnd === undefined) return null
       end = padSpeechEnd(lastSentenceEnd, transcript, videoDurationSec, END_POST_ROLL_SEC)
     }
     if (end - start < Math.min(MIN_CLIP_SEC, videoDurationSec * 0.5)) {
       if (process.env.CUTAWAN_DEBUG) {
         console.error(`[highlights] dropped too-short clip ${raw.start}-${raw.end} -> ${start.toFixed(1)}-${end.toFixed(1)}`)
       }
-      continue
+      return null
     }
     const typeDefaults = initialClipEditForVideoType(options.videoType)
-    clips.push({
+    return {
       id: randomUUID(),
       suggestedStart: start,
       suggestedEnd: end,
@@ -761,8 +840,41 @@ async function requestHighlights(
         start,
         end,
         ...typeDefaults
-      }
-    })
+      },
+      ...(marker !== undefined ? { streamMarker: marker } : {})
+    }
+  }
+
+  const clips: Clip[] = []
+  for (const raw of res.clips ?? []) {
+    const clip = build(raw)
+    if (clip) clips.push(clip)
+  }
+
+  // The creator's own markers always get a clip: claim the clip that covers
+  // one, or cut a fresh one around it.
+  for (const marker of hints?.markers ?? []) {
+    if (marker <= 0 || marker >= videoDurationSec) continue
+    const covering = clips.find((c) => c.edit.start - 2 <= marker && marker <= c.edit.end + 3 && c.streamMarker === undefined)
+    if (covering) {
+      covering.streamMarker = marker
+      covering.viralityScore = Math.max(covering.viralityScore, MARKER_SCORE)
+      covering.viralityReason = `${MARKER_REASON} ${covering.viralityReason}`.trim()
+      continue
+    }
+    const minutes = Math.floor(marker / 60), seconds = Math.floor(marker % 60)
+    const clip = build({
+      start: Math.max(0, marker - MARKER_LOOKBACK_SEC),
+      end: Math.min(videoDurationSec, marker + MARKER_TAIL_SEC),
+      title: `Мітка ${minutes}:${String(seconds).padStart(2, '0')}`,
+      hook: '',
+      summary: 'Момент, який ви позначили гарячою клавішею під час стріму.',
+      virality_score: MARKER_SCORE,
+      payoff: '',
+      virality_reason: MARKER_REASON,
+      hashtags: []
+    }, marker)
+    if (clip) clips.push(clip)
   }
 
   clips.sort((a, b) => b.viralityScore - a.viralityScore)

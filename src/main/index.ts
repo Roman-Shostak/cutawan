@@ -177,6 +177,20 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
     throw new Error('Smoke capture: the setup screen does not offer the saved game track')
   }
   await shot('setup-audio-tracks')
+  // "My stream" template: outline the webcam on the frame, see the 9:16 result.
+  await click('[data-testid="video-type-gaming-stream"]')
+  await win.webContents.executeJavaScript(`(() => {
+    const frame = document.querySelector('[data-testid="stream-template-frame"]')
+    frame.scrollIntoView({ block: 'center' })
+    const r = frame.getBoundingClientRect()
+    const at = (type, fx, fy) => frame.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: r.left + r.width * fx, clientY: r.top + r.height * fy }))
+    at('pointerdown', .72, .04); at('pointermove', .85, .2); at('pointerup', .97, .36)
+  })()`)
+  await sleep(1500)
+  if (!(await win.webContents.executeJavaScript(`document.body.innerText.includes('Без вебки')`))) {
+    throw new Error('Smoke capture: outlining the webcam did not set the stream template')
+  }
+  await shot('setup-stream-template')
   if (await win.webContents.executeJavaScript(`document.querySelector('[data-testid="editorial-ranking-toggle"]').checked`)) {
     throw new Error('Smoke capture: editorial ranking must be opt-in on a new project')
   }

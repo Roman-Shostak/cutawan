@@ -9,6 +9,7 @@ export default function SubscriptionSettings({ value, onChange, onSave }: {
 }): React.JSX.Element {
   const [checking, setChecking] = useState(false)
   const [message, setMessage] = useState('')
+  const [showProviders, setShowProviders] = useState(false)
   const update = (patch: Partial<Preferences>): void => {
     setMessage('')
     onChange({ ...value, ...patch })
@@ -33,12 +34,17 @@ export default function SubscriptionSettings({ value, onChange, onSave }: {
   }
   const inputClass = 'mt-1 w-full rounded-lg border border-surface-600 bg-surface-850 px-3 py-2 text-sm'
   return <div className="mb-6 space-y-3">
+    {/* API (Claude or another compatible service) is the everyday choice; the
+        other connections stay reachable but out of the way. */}
+    {value.provider === 'api' && !showProviders ? <button type="button" onClick={() => setShowProviders(true)}
+      className="text-xs text-zinc-500 underline underline-offset-4 hover:text-zinc-300">Інші підключення (OpenRouter, ChatGPT)</button> : <>
     <label className="block text-sm font-medium" htmlFor="analysis-provider">Підключення до ШІ</label>
     <select id="analysis-provider" value={value.provider} onChange={e => update({ provider: e.target.value as Preferences['provider'] })} className={inputClass}>
-      <option value="api">OpenAI-сумісний API</option>
+      <option value="api">API-ключ (Claude чи інший сумісний сервіс)</option>
       <option value="openrouter">OpenRouter</option>
       <option value="chatgpt">Підписка ChatGPT через Codex (бета)</option>
     </select>
+    </>}
     {value.provider === 'api' && <>
       <label className="flex items-center gap-2 text-xs text-zinc-300">
         <input type="checkbox" checked={value.localTranscription} onChange={e => update({ localTranscription: e.target.checked })} />

@@ -169,6 +169,11 @@ function ClipCard({ clip, rank }: { clip: Clip; rank: number }): React.JSX.Eleme
             #{rank}
           </span>
           <EditorialScore clip={clip} current={assessmentCurrent} />
+          {clip.streamMarker !== undefined && (
+            <span className="rounded-full bg-sky-500/80 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur" title="Ви позначили цей момент гарячою клавішею під час стріму">
+              ★ Ваша мітка
+            </span>
+          )}
         </div>
         {framing && (
           <span className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-zinc-300 backdrop-blur">

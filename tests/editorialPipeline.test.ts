@@ -5,7 +5,7 @@ import { makeTranscript } from './helpers'
 
 const mocks = vi.hoisted(() => ({ highlights: vi.fn(), transcript: vi.fn(), assess: vi.fn(), complete: vi.fn(),
   faces: vi.fn(), composition: vi.fn(), save: vi.fn(), projectDir: vi.fn(), discovery: vi.fn(), rank: vi.fn() }))
-vi.mock('../src/main/settings', () => ({ getAnalysisCredential: () => 'key', getModelPreferences: () => ({ analysisModel: 'test' }), getImportPreferences: vi.fn() }))
+vi.mock('../src/main/settings', () => ({ getAnalysisCredential: () => 'key', getModelPreferences: () => ({ analysisModel: 'test' }), getImportPreferences: vi.fn(), getTranscriptionVocabulary: () => '', saveStreamTemplate: vi.fn() }))
 vi.mock('../src/main/projects', () => ({ projectDir: mocks.projectDir, saveProject: vi.fn(), updateProject: mocks.save }))
 vi.mock('../src/main/pipeline/projectTranscript', () => ({ ensureTranscript: mocks.transcript }))
 vi.mock('../src/main/pipeline/highlights', async importOriginal => ({
@@ -70,7 +70,7 @@ it('persists the review report and previous edits when every new candidate is re
   const [previous] = await mocks.highlights(); project.clips = [previous]
   project.clipsGenerationId = 'previous-generation'
   mocks.rank.mockResolvedValue({ clips: [], report: { version: 1, candidateCount: 1, rejectedCount: 1 } })
-  await expect(analyzeProject(project, options, () => {})).rejects.toThrow('incomplete or misleading')
+  await expect(analyzeProject(project, options, () => {})).rejects.toThrow('неповні чи оманливі')
   expect(project.clips).toEqual([previous])
   expect(project.editorialRanking?.rejectedCount).toBe(1)
   expect(project.clipsGenerationId).toBe('previous-generation')
@@ -112,7 +112,7 @@ it('persists unsuccessful scan coverage and preserves previous clips when no new
   project.clips = [previous]
   mocks.transcript.mockResolvedValue({ language: 'en', durationSec: 100, segments: [] })
   mocks.discovery.mockResolvedValue({ version: 1, status: 'failed', candidates: [] })
-  await expect(analyzeProject(project, { ...options, visualDiscovery: true }, () => {})).rejects.toThrow('visual scan failed')
+  await expect(analyzeProject(project, { ...options, visualDiscovery: true }, () => {})).rejects.toThrow('Візуальний пошук не вдався')
   expect(project.discoveryReport?.status).toBe('failed')
   expect(project.clips).toEqual([previous])
   expect(project.discoveryReport?.generationId).not.toBe(project.clipsGenerationId)
@@ -147,7 +147,7 @@ it('reviews content composition for explicit product demos without running face 
 
 it('does not recommend a known incomplete demonstration when repair fails', async () => {
   mocks.assess.mockResolvedValue({ ...review, needsVisualPayoff: true })
-  await expect(analyzeProject(project, options, () => {})).rejects.toThrow('payoffs could not be included')
+  await expect(analyzeProject(project, options, () => {})).rejects.toThrow('розв’язку яких не вдалося вмістити')
   expect(mocks.composition).not.toHaveBeenCalled()
 })
 
@@ -166,12 +166,12 @@ it('does not recommend a repair when its second review fails', async () => {
   mocks.assess.mockResolvedValueOnce({ ...review, needsVisualPayoff: true }).mockResolvedValueOnce(null)
   const [clip] = await mocks.highlights()
   mocks.complete.mockResolvedValue(clip)
-  await expect(analyzeProject(project, options, () => {})).rejects.toThrow('payoffs could not be included')
+  await expect(analyzeProject(project, options, () => {})).rejects.toThrow('розв’язку яких не вдалося вмістити')
 })
 
 it('rejects a grounded incoherent story despite its high numerical score', async () => {
   mocks.assess.mockResolvedValue({...review,visualScore:99,storyIssue:{kind:'unrelated_scene',evidenceQuote:'We already tried that one.',reason:'Unexplained new scene.'}})
-  await expect(analyzeProject(project,options,()=>{})).rejects.toThrow('complete, self-contained stories')
+  await expect(analyzeProject(project,options,()=>{})).rejects.toThrow('завершені самодостатні історії')
   expect(mocks.composition).not.toHaveBeenCalled()
 })
 

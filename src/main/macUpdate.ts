@@ -20,7 +20,7 @@ export function macInstaller(assets: ReleaseAsset[], version: string, arch: stri
     : [`Cutawan-${version}-x64.dmg`, `Cutawan-${version}.dmg`, `Cutawan-${version}-universal.dmg`]
   return assets.find((a) => names.includes(a.name) &&
     Number.isSafeInteger(a.size) && a.size > 0 && /^sha256:[a-f0-9]{64}$/.test(a.digest ?? '') &&
-    a.browser_download_url === `https://github.com/JeremySNR/cutawan/releases/download/v${version}/${a.name}`
+    a.browser_download_url === `https://github.com/Roman-Shostak/cutawan/releases/download/v${version}/${a.name}`
   ) ?? null
 }
 
@@ -45,7 +45,7 @@ export async function downloadMacInstaller(
   // Enforce the boundary here too, even if a caller bypasses macInstaller.
   if (!/^Cutawan-[\d.]+(?:-(?:arm64|x64|universal))?\.dmg$/.test(asset.name) ||
       !/^sha256:[a-f0-9]{64}$/.test(asset.digest ?? '') ||
-      !/^https:\/\/github\.com\/JeremySNR\/cutawan\/releases\/download\/v\d+\.\d+\.\d+\//.test(asset.browser_download_url) ||
+      !/^https:\/\/github\.com\/Roman-Shostak\/cutawan\/releases\/download\/v\d+\.\d+\.\d+\//.test(asset.browser_download_url) ||
       !asset.browser_download_url.endsWith(`/${asset.name}`) ||
       !Number.isSafeInteger(asset.size) || asset.size <= 0) throw new Error('Invalid installer metadata.')
   signal.throwIfAborted()

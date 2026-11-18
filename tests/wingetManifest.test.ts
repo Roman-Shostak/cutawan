@@ -8,9 +8,9 @@ describe('buildManifests', () => {
   const manifests = buildManifests({
     version: '0.7.0',
     installerUrl:
-      'https://github.com/JeremySNR/cutawan/releases/download/v0.7.0/Cutawan-Setup-0.7.0.exe',
+      'https://github.com/Roman-Shostak/cutawan/releases/download/v0.7.0/Cutawan-Setup-0.7.0.exe',
     installerSha256: SHA,
-    releaseUrl: 'https://github.com/JeremySNR/cutawan/releases/tag/v0.7.0',
+    releaseUrl: 'https://github.com/Roman-Shostak/cutawan/releases/tag/v0.7.0',
     publishedAt: '2026-09-02T06:20:17Z'
   })
 
@@ -28,7 +28,7 @@ describe('buildManifests', () => {
     expect(manifests.localeYaml).toContain('License: MIT')
     expect(manifests.localeYaml).toContain('Moniker: cutawan')
     expect(manifests.localeYaml).toContain(
-      'https://github.com/JeremySNR/cutawan/releases/tag/v0.7.0'
+      'https://github.com/Roman-Shostak/cutawan/releases/tag/v0.7.0'
     )
   })
 })

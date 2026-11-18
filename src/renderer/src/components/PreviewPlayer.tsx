@@ -12,6 +12,7 @@ import { clipKeptSegments, TimeMap } from '@shared/tighten'
 import { automaticLayoutShots, clipAllowsAutoZoom, compositionHidesTitle, detailCaptionRanges, layoutBlocksAutoZoom } from '@shared/contentType'
 import { captionPositionAt } from '@shared/contentRegion'
 import { GAME_SUBTITLE_STYLE, HOOK_TITLE_SEC, visibleChatLines, visibleGameLines, withChatLines } from '@shared/gameDialogue'
+import { clipGameSubtitleTop } from '@shared/streamLayout'
 import { computeZoomEvents, fitZoomEvents } from '@shared/zoom'
 import { formatTimecode } from '../lib/format'
 import {
@@ -471,7 +472,8 @@ function GameSubtitleOverlay({ project, clip, time, titleShown }: {
   const line = lines.find((l) => time >= l.start && time < l.end)
   if (!line) return null
   const game = GAME_SUBTITLE_STYLE
-  const top = titleShown && line.start - clip.edit.start < HOOK_TITLE_SEC ? game.belowTitleY : game.positionY
+  const top = clipGameSubtitleTop(clip) ??
+    (titleShown && line.start - clip.edit.start < HOOK_TITLE_SEC ? game.belowTitleY : game.positionY)
   return (
     <div
       className="pointer-events-none absolute inset-x-0 flex justify-center"

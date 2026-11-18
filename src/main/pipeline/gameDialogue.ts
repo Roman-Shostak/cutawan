@@ -6,7 +6,7 @@ import { chatJSON, transcriptionChunkSec } from './openai'
 import { transcribeChunks } from './transcribe'
 import { speechFor } from './projectTranscript'
 import { updateProject } from '../projects'
-import { getAnalysisCredential, getModelPreferences } from '../settings'
+import { getAnalysisCredential, getModelPreferences, getTranscriptionVocabulary } from '../settings'
 import { timed } from './timing'
 
 /**
@@ -32,6 +32,8 @@ export interface GameDialogueOptions {
   context: string
   /** ISO-639-1 language to translate into. */
   targetLanguage: string
+  /** Names and slang Whisper should spell right. */
+  vocabulary?: string
   span: { from: number; to: number }
 }
 
@@ -71,7 +73,8 @@ export async function ensureGameDialogue(
     // 'auto': games speak English, Russian and more, and a forced language
     // would make Whisper translate or garble the lines instead of transcribing.
     const transcript = await transcribeChunks(options.apiKey, options.transcriptionModel, chunks, 'auto',
-      (f) => onProgress({ stage: 'transcribe', progress: at(0.15 + f * 0.55), message: 'Розпізнаю діалоги гри…' }), signal)
+      (f) => onProgress({ stage: 'transcribe', progress: at(0.15 + f * 0.55), message: 'Розпізнаю діалоги гри…' }), signal,
+      options.vocabulary ?? '')
     const regions = (await speech) ?? undefined
     const words = transcript.segments.flatMap((s) => s.words)
     lines = wordsToGameLines(words)
@@ -220,6 +223,7 @@ export async function applyGameDialogue(
     audioTrack: gameTrack,
     context,
     targetLanguage: target,
+    vocabulary: getTranscriptionVocabulary(),
     span
   }, onProgress, signal))
 }

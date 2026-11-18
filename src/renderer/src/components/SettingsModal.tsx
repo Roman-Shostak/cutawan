@@ -5,6 +5,7 @@ import { DEFAULT_SUBSCRIPTION } from '@shared/subscription'
 import { useEffect, useState } from 'react'
 import {
   X,
+  BookA,
   KeyRound,
   Brain,
   Check,
@@ -100,7 +101,6 @@ const SECTIONS: Array<{ id: SectionId; label: string; icon: typeof KeyRound }> =
   { id: 'general', label: 'API і моделі', icon: KeyRound },
   { id: 'export', label: 'Експорт', icon: MonitorPlay },
   { id: 'branding', label: 'Брендинг', icon: Stamp },
-  { id: 'voice', label: 'Голос бренду', icon: MessageSquareQuote },
   { id: 'fonts', label: 'Шрифти', icon: Type },
   { id: 'updates', label: 'Оновлення', icon: RefreshCw }
 ]
@@ -367,13 +367,35 @@ export default function SettingsModal(): React.JSX.Element {
           </select>
               </div>
 
+              <div className="mt-5">
+                <label className="flex items-center gap-2 text-sm font-medium" htmlFor="transcription-vocabulary">
+                  <BookA size={15} className="text-accent-400" />
+                  Словник для розпізнавання
+                </label>
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                  Слова, які Whisper має писати саме так: твій нік, ніки друзів, назви ігор, сленг. Через кому або з нового рядка.
+                </p>
+                <textarea
+                  id="transcription-vocabulary"
+                  key={settings?.transcriptionVocabulary ?? ''}
+                  defaultValue={settings?.transcriptionVocabulary ?? ''}
+                  onBlur={(e) => {
+                    if (e.target.value !== (settings?.transcriptionVocabulary ?? '')) void saveSettings({ transcriptionVocabulary: e.target.value })
+                  }}
+                  rows={3}
+                  maxLength={600}
+                  placeholder="напр. sh0stack, The Last of Us, Еллі, Джоел, катка, тімейт"
+                  className="mt-2.5 w-full resize-none rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none"
+                />
+              </div>
+
               <button
                 onClick={() => void save()}
                 disabled={saving}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-zinc-900 transition hover:bg-white disabled:opacity-60"
               >
                 {saved ? <Check size={16} /> : null}
-                {saved ? 'Saved' : saving ? 'Зберігаю…' : 'Зберегти налаштування'}
+                {saved ? 'Збережено' : saving ? 'Зберігаю…' : 'Зберегти налаштування'}
               </button>
             </div>
           )}
@@ -925,7 +947,7 @@ function UpdatesSection(): React.JSX.Element {
         (updateCheck.autoUpdateSupported || updateCheck.manualDownloadSupported)) ? (
         <UpdateInstaller
           latestVersion={updateDownload.version ?? updateCheck?.latestVersion ?? ''}
-          releaseUrl={updateCheck?.releaseUrl ?? 'https://github.com/JeremySNR/cutawan/releases/latest'}
+          releaseUrl={updateCheck?.releaseUrl ?? 'https://github.com/Roman-Shostak/cutawan/releases/latest'}
           download={updateDownload}
           manual={updateDownload.mode === 'manual' || !!updateCheck?.manualDownloadSupported}
           busy={busy}

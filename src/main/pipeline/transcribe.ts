@@ -183,6 +183,21 @@ export function trustedChunkText(res: WhisperResponse, beforeSec = Infinity): st
 }
 
 /**
+ * The creator's glossary as a Whisper prompt: comma-separated terms from a
+ * free-form list (commas or new lines), at most ~300 characters.
+ */
+export function vocabularyPrompt(vocabulary: string): string {
+  const terms = vocabulary.split(/[,;\n]+/).map((t) => t.trim()).filter(Boolean)
+  let out = ''
+  for (const term of terms) {
+    const next = out ? `${out}, ${term}` : term
+    if (next.length > 300) break
+    out = next
+  }
+  return out ? `${out}.` : ''
+}
+
+/**
  * Transcribe all audio chunks (sequentially: the tail of each chunk's text is
  * preceding the next file is passed as a Whisper prompt for terminology).
  * Stitch the results, then check sustained overlap disagreements against audio.
@@ -193,16 +208,22 @@ export async function transcribeChunks(
   chunks: AudioChunk[],
   language: string,
   onProgress?: (fraction: number) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  vocabulary = ''
 ): Promise<Transcript> {
   const results: ChunkResult[] = []
   let previousTail = ''
+  // The creator's glossary (nicknames, games, slang) leads every prompt so
+  // Whisper spells those words their way; the previous chunk's tail follows.
+  const glossary = vocabularyPrompt(vocabulary)
+  const promptFor = (tail: string): string | undefined =>
+    [glossary, tail.slice(-Math.max(120, 600 - glossary.length))].filter(Boolean).join(' ') || undefined
 
   for (let i = 0; i < chunks.length; i++) {
     signal?.throwIfAborted()
     const chunk = chunks[i]
     const res = await transcribeAudioFile(apiKey, chunk.path, model, {
-      contextPrompt: previousTail || undefined,
+      contextPrompt: promptFor(previousTail),
       language,
       signal
     })
@@ -239,7 +260,7 @@ export async function transcribeChunks(
           '[l][r]concat=n=2:v=0:a=1[a]',
           '-map', '[a]', '-ac', '1', '-ar', '16000', path
         ], { signal })
-        const response = await transcribeAudioFile(apiKey, path, model, { language, signal })
+        const response = await transcribeAudioFile(apiKey, path, model, { language, signal, ...(glossary ? { contextPrompt: glossary } : {}) })
         const patch = stitchChunkResults([{
           chunk: { path, offsetSec: from, keepFromSec: 0, keepToSec: Infinity }, res: response
         }])

@@ -18,6 +18,11 @@ export interface VideoInfo {
    * until probed again.
    */
   audioTracks?: AudioTrackInfo[]
+  /**
+   * Moments the creator marked while recording, in seconds (OBS chapter
+   * markers in Hybrid MP4, or any chapters stored in the file).
+   */
+  markers?: number[]
 }
 
 export interface AudioTrackInfo {
@@ -141,7 +146,22 @@ export type ProjectMode = 'clips' | 'whole-video'
  * What kind of source video this project is. Chosen at setup time and steers
  * highlight defaults, face tracking and 9:16 layout (crop vs letterbox).
  */
-export type VideoType = 'auto' | 'talking-head' | 'podcast' | 'webinar' | 'product-demo'
+export type VideoType = 'auto' | 'talking-head' | 'podcast' | 'webinar' | 'product-demo' | 'gaming-stream'
+
+/** How much of the game a stream layout shows under the webcam. */
+export type StreamGameZoom = 'fill' | 'wide' | 'full'
+
+/**
+ * The creator's OBS scene as one reusable 9:16 layout: where the webcam sits
+ * in the recording (source fractions, null when there is no webcam), and how
+ * the game fills the rest of the vertical frame.
+ */
+export interface StreamTemplate {
+  webcam: ContentRegion | null
+  gameZoom: StreamGameZoom
+  /** Horizontal centre of the game crop, 0 = left edge, 1 = right edge. */
+  gameFocusX: number
+}
 
 /** Auto = follow the AI face track; manual = fixed focusX slider. */
 export type FramingMode = 'auto' | 'manual'
@@ -242,6 +262,8 @@ export interface Clip {
   origin?: ClipOrigin
   /** Evidence route for this suggestion; not a quality or popularity guarantee. */
   discovery?: { origin: 'transcript' | 'visual'; evidenceTimes?: number[] }
+  /** Source second of the creator's own marker (OBS hotkey) this clip covers. */
+  streamMarker?: number
   editorial?: EditorialAssessment
   /** AI suggested boundaries (absolute seconds in the source video). */
   suggestedStart: number
@@ -300,9 +322,12 @@ export interface ContentRegion { x: number; y: number; width: number; height: nu
 export interface Composition {
   version: 1
   /** `speakers`: two people from one wide shot, stacked, during a quick exchange. */
-  preset: 'content-first' | 'stacked' | 'content-only' | 'speakers'
+  /** `stream`: the creator's stream template — webcam on top, game below. */
+  preset: 'content-first' | 'stacked' | 'content-only' | 'speakers' | 'stream'
   layers: Array<{ role: 'content' | 'presenter' | 'speaker'; source: ContentRegion; target: ContentRegion }>
   captionY: number
+  /** The template a `stream` composition was built from, so the editor can rebuild it. */
+  stream?: StreamTemplate
 }
 
 export interface LayoutShot {
@@ -399,6 +424,8 @@ export interface AnalyzeOptions {
   audioRouting?: AudioRouting
   /** Game title or notes that keep translated names consistent. */
   gameContext?: string
+  /** Layout for `gaming-stream` clips; saved as the default for the next video. */
+  streamTemplate?: StreamTemplate
 }
 
 export type ClipLengthPreference = 'auto' | 'short' | 'medium' | 'long'
@@ -646,6 +673,10 @@ export interface AppSettings {
   importCookiesBrowser: BrowserCookieSource
   /** True when a Netscape cookies.txt file is stored for URL imports. */
   hasImportCookiesFile: boolean
+  /** Names and slang passed to Whisper as spelling hints. */
+  transcriptionVocabulary: string
+  /** The last stream layout used; the next gaming video starts from it. */
+  streamTemplate: StreamTemplate | null
 }
 
 export interface SettingsUpdate {
@@ -669,6 +700,9 @@ export interface SettingsUpdate {
   brandVoice?: Partial<BrandVoiceSettings>
   importCookiesBrowser?: BrowserCookieSource
   clearImportCookiesFile?: boolean
+  /** Names and slang Whisper should spell right (nicknames, games, friends). */
+  transcriptionVocabulary?: string
+  streamTemplate?: StreamTemplate | null
 }
 
 export interface PipelineError {

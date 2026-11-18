@@ -27,6 +27,7 @@ import { loudnormFilter, measureLoudness, normalisationMode, type LoudnessStats 
 import { buildAss, fontsDir } from './captions'
 import { fontMetricsForFamily } from '../fonts'
 import { GAME_SUBTITLE_STYLE, withChatLines } from '@shared/gameDialogue'
+import { clipGameSubtitleTop } from '@shared/streamLayout'
 import { mediaJobs } from './mediaJobs'
 import {
   audioArgs,
@@ -689,7 +690,10 @@ async function render(job: RenderJob): Promise<RenderResult> {
 
   let assPath: string | null = null
   const voiceCaptions = clip.edit.captionsEnabled && !!captionTranscript
-  if (voiceCaptions || gameLines.length > 0) {
+  // The hook title burns whenever the editor shows it — with or without
+  // captions — so the export matches the preview.
+  const hookTitle = clip.edit.showTitle && !compositionHidesTitle(effectiveClip) ? (clip.hook || clip.title || '').trim() : ''
+  if (voiceCaptions || gameLines.length > 0 || hookTitle) {
     // libass sizes text against the font's win ascent+descent, not the em
     // square the preview uses, so the ASS needs the resolved font's metrics
     // to come out the same size on screen (see assFontSize).
@@ -709,13 +713,14 @@ async function render(job: RenderJob): Promise<RenderResult> {
       voiceCaptions,
       gameLines,
       gameFontMetrics,
+      gameTopY: clipGameSubtitleTop(effectiveClip),
       fontMetrics,
       styleId: clip.edit.captionStyleId,
       width: w,
       height: h,
       clipStart: captionStart,
       clipEnd: captionEnd,
-      title: voiceCaptions && clip.edit.showTitle && !compositionHidesTitle(effectiveClip) ? clip.hook || clip.title : undefined,
+      title: hookTitle || undefined,
       fontFamily: clip.edit.captionFontFamily ?? undefined,
       brandColors: job.branding?.colors,
       positionRanges: detailCaptionRanges(effectiveClip)

@@ -1,4 +1,4 @@
-import { open, rm } from 'node:fs/promises'
+import { mkdir, open, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
@@ -18,15 +18,17 @@ const SAMPLE_RATE = 16000
 const BYTES_PER_SAMPLE = 2
 
 /** Decode an audio file to mono 16k PCM and return per-second RMS values. */
-async function perSecondRms(audioPath: string): Promise<number[]> {
+async function perSecondRms(audioPath: string, audioTrack?: number, signal?: AbortSignal): Promise<number[]> {
   const pcmPath = join(tmpdir(), 'cutawan', `energy-${randomUUID()}.pcm`)
+  await mkdir(join(tmpdir(), 'cutawan'), { recursive: true })
   await runFfmpeg([
     '-i', audioPath,
+    ...(audioTrack !== undefined ? ['-map', `0:a:${audioTrack}`, '-vn'] : []),
     '-ac', '1',
     '-ar', String(SAMPLE_RATE),
     '-f', 's16le',
     pcmPath
-  ])
+  ], { signal })
   try {
     const rms: number[] = []
     const file = await open(pcmPath, 'r')
@@ -108,5 +110,36 @@ export async function annotateEnergy(
     }
   } catch (err) {
     console.error('Energy annotation failed (continuing without it):', err)
+  }
+}
+
+/**
+ * How loud one audio track of the source is, second by second, as a
+ * percentile within that track (0 = silent or the quietest, 1 = the loudest).
+ * Used on the game track: explosions, screams and boss fights stand out even
+ * when the creator says nothing. Null when the track cannot be read.
+ */
+export async function trackLoudness(videoPath: string, audioTrack: number, signal?: AbortSignal): Promise<number[] | null> {
+  try {
+    const rms = await perSecondRms(videoPath, audioTrack, signal)
+    const peak = Math.max(0, ...rms)
+    if (rms.length < 10 || peak <= 0) return null
+    const gate = Math.max(0.002, peak * 0.03)
+    const sorted = rms.filter((v) => v > gate).sort((a, b) => a - b)
+    if (sorted.length < 10) return null
+    return rms.map((v) => {
+      if (v <= gate) return 0
+      let lo = 0, hi = sorted.length
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1
+        if (sorted[mid] < v) lo = mid + 1
+        else hi = mid
+      }
+      return Math.round((lo / sorted.length) * 100) / 100
+    })
+  } catch (err) {
+    signal?.throwIfAborted()
+    console.error('Game-track loudness failed (continuing without it):', err)
+    return null
   }
 }

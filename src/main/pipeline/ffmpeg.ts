@@ -151,6 +151,7 @@ interface ProbedStream {
 interface ProbedMedia {
   format?: { duration?: string; size?: string }
   streams?: ProbedStream[]
+  chapters?: Array<{ start_time?: string; tags?: { title?: string } }>
 }
 
 async function probeMedia(filePath: string): Promise<ProbedMedia> {
@@ -160,6 +161,7 @@ async function probeMedia(filePath: string): Promise<ProbedMedia> {
     '-print_format', 'json',
     '-show_format',
     '-show_streams',
+    '-show_chapters',
     filePath
   ])
   return JSON.parse(out) as ProbedMedia
@@ -199,8 +201,21 @@ export async function probeVideo(filePath: string): Promise<VideoInfo> {
     fps: Math.round(fps * 100) / 100,
     sizeBytes: Number(data.format?.size ?? 0),
     hasAudio,
-    audioTracks
+    audioTracks,
+    markers: markersOf(data, durationSec)
   }
+}
+
+/**
+ * Creator markers: chapter starts stored in the file. OBS writes one per
+ * press of its "Add chapter marker" hotkey when recording Hybrid MP4. The
+ * implicit chapter at the very start is not a marker.
+ */
+function markersOf(data: ProbedMedia, durationSec: number): number[] {
+  const times = (data.chapters ?? [])
+    .map((c) => Number(c.start_time))
+    .filter((t) => Number.isFinite(t) && t > 1 && t < durationSec)
+  return [...new Set(times.map((t) => Math.round(t * 10) / 10))].sort((a, b) => a - b)
 }
 
 /** Generic handler names muxers write when no track name was set. */
@@ -216,9 +231,10 @@ function audioTracksOf(data: ProbedMedia): AudioTrackInfo[] {
     })
 }
 
-/** Audio tracks of a media file, for projects created before tracks were recorded. */
-export async function probeAudioTracks(filePath: string): Promise<AudioTrackInfo[]> {
-  return audioTracksOf(await probeMedia(filePath))
+/** Audio tracks and markers of a media file, for projects created before they were recorded. */
+export async function probeTracksAndMarkers(filePath: string): Promise<{ audioTracks: AudioTrackInfo[]; markers: number[] }> {
+  const data = await probeMedia(filePath)
+  return { audioTracks: audioTracksOf(data), markers: markersOf(data, Number(data.format?.duration ?? 0)) }
 }
 
 export interface AudioChunk {

@@ -11,7 +11,9 @@ import type {
   EncoderPreference,
   QualityPreference,
   SettingsUpdate,
+  StreamTemplate,
 } from '@shared/types'
+import { normalizeStreamTemplate } from '@shared/composition'
 import { getGpuStatus } from './pipeline/encoders'
 import { clearImportCookiesFile, getImportCookiesPath } from './cookies'
 import { DEFAULT_BRAND_COLORS } from '@shared/captionStyles'
@@ -42,6 +44,8 @@ interface StoredSettings {
   branding: BrandingSettings
   brandVoice: BrandVoiceSettings
   importCookiesBrowser: BrowserCookieSource
+  transcriptionVocabulary: string
+  streamTemplate: StreamTemplate | null
 }
 
 const DEFAULT_BRANDING: BrandingSettings = {
@@ -80,7 +84,9 @@ const DEFAULTS: StoredSettings = {
   sizeTargetMb: null,
   branding: DEFAULT_BRANDING,
   brandVoice: DEFAULT_BRAND_VOICE,
-  importCookiesBrowser: ''
+  importCookiesBrowser: '',
+  transcriptionVocabulary: '',
+  streamTemplate: null
 }
 
 function settingsPath(): string {
@@ -131,7 +137,9 @@ function load(): StoredSettings {
           ...(parsed.branding ?? {}),
           colors: { ...DEFAULT_BRAND_COLORS, ...(parsed.branding?.colors ?? {}) }
         },
-        brandVoice: { ...DEFAULT_BRAND_VOICE, ...(parsed.brandVoice ?? {}) }
+        brandVoice: { ...DEFAULT_BRAND_VOICE, ...(parsed.brandVoice ?? {}) },
+        transcriptionVocabulary: typeof parsed.transcriptionVocabulary === 'string' ? parsed.transcriptionVocabulary : '',
+        streamTemplate: normalizeStreamTemplate(parsed.streamTemplate)
       }
       applyEndpoints(cache)
       return cache
@@ -228,7 +236,9 @@ export async function getSettings(): Promise<AppSettings> {
     brandVoice: s.brandVoice,
     appVersion: app.getVersion(),
     importCookiesBrowser: s.importCookiesBrowser,
-    hasImportCookiesFile: getImportCookiesPath() !== null
+    hasImportCookiesFile: getImportCookiesPath() !== null,
+    transcriptionVocabulary: s.transcriptionVocabulary,
+    streamTemplate: s.streamTemplate
   }
 }
 
@@ -241,6 +251,17 @@ export function getImportPreferences(): {
     importCookiesBrowser: load().importCookiesBrowser,
     importCookiesPath: getImportCookiesPath()
   }
+}
+
+/** Names and slang for Whisper, trimmed; empty when none were given. */
+export function getTranscriptionVocabulary(): string {
+  return load().transcriptionVocabulary.trim()
+}
+
+/** Remember the stream layout so the next gaming video starts from it. */
+export function saveStreamTemplate(template: StreamTemplate): void {
+  const normalized = normalizeStreamTemplate(template)
+  if (normalized) persist({ ...load(), streamTemplate: normalized })
 }
 
 /** Synchronous access to the stored branding preferences. */
@@ -325,6 +346,8 @@ export async function updateSettings(update: SettingsUpdate): Promise<AppSetting
     s.brandVoice = { ...s.brandVoice, ...update.brandVoice }
   }
   if (update.importCookiesBrowser !== undefined) s.importCookiesBrowser = update.importCookiesBrowser
+  if (update.transcriptionVocabulary !== undefined) s.transcriptionVocabulary = update.transcriptionVocabulary.slice(0, 600)
+  if (update.streamTemplate !== undefined) s.streamTemplate = normalizeStreamTemplate(update.streamTemplate)
   if (update.clearImportCookiesFile) await clearImportCookiesFile()
   persist(s)
   return getSettings()

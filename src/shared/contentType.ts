@@ -138,7 +138,7 @@ export function automaticLayoutShots(clip: Pick<Clip, 'edit' | 'visualLayout'>):
     let composition = shot.composition
     if (composition && clip.edit.aspect !== '9:16') return { ...shot, composition: undefined }
     const preference = clip.edit.compositionPreference
-    if (composition && isPresenterComposition(composition) && preference && preference !== 'auto' && preference !== composition.preset) {
+    if (composition && composition.preset !== 'stream' && isPresenterComposition(composition) && preference && preference !== 'auto' && preference !== composition.preset) {
       const content = composition.layers.find(l => l.role === 'content')!
       const presenter = composition.layers.find(l => l.role === 'presenter')
       if (presenter) composition = presenterComposition(content.source, presenter.source, preference)
