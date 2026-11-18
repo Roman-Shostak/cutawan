@@ -290,7 +290,10 @@ export async function analyzeProject(
         p.rankingEnabled = true
         p.editorialRanking = ranked.report
       })
-      clips = ranked.clips
+      // The review may reject a marked moment; the creator chose it, so it
+      // stays (after the recommended clips).
+      const kept = new Set(ranked.clips.map(clip => clip.id))
+      clips = [...ranked.clips, ...baselineClips.filter(clip => clip.streamMarker !== undefined && !kept.has(clip.id))]
       if (!clips.length) throw new Error('Редакторська перевірка знайшла лише неповні чи оманливі фрагменти. Спробуйте довшу довжину кліпу чи інші інструкції; звіт перевірки збережено.')
     } else clips = baselineClips
 
