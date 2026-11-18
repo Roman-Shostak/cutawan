@@ -154,6 +154,10 @@ interface AppState {
   updateTranscriptWord: (segmentId: number, wordIndex: number, text: string) => Promise<void>
   /** Change the text or the speaker (game / friend) of one game-dialogue line. */
   updateGameLine: (lineId: string, patch: GameLinePatch) => Promise<void>
+  /** Translate or restore the open project's captions to the chosen language. */
+  syncCaptionLanguage: () => Promise<void>
+  /** Project id whose captions are being brought to the chosen language. */
+  captionSync: string | null
   /** Locate the webcam in the current project's recording, once. */
   detectWebcam: () => Promise<void>
   /** Project id whose webcam is being looked for right now. */
@@ -292,6 +296,9 @@ export const useStore = create<AppState>((set, get) => ({
       selectedClipId: wholeVideo?.id ?? null,
       pipelineError: null
     })
+    // Clips cut before the caption language was chosen (or switched since)
+    // catch up in the background.
+    if (project.clips.length > 0) void get().syncCaptionLanguage()
   },
 
   deleteProject: async (id) => {
@@ -326,6 +333,8 @@ export const useStore = create<AppState>((set, get) => ({
   saveSettings: async (update) => {
     const settings = await window.cutawan.updateSettings(update)
     set({ settings })
+    // A project with clips shows the new caption language straight away.
+    if (update.captionLanguage && (get().project?.clips.length ?? 0) > 0) void get().syncCaptionLanguage()
   },
 
   refreshSettings: async () => {
@@ -537,6 +546,17 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   detectingWebcam: null,
+  captionSync: null,
+
+  syncCaptionLanguage: async () => {
+    const project = get().project
+    if (!project?.transcript || get().captionSync === project.id) return
+    set({ captionSync: project.id })
+    const updated = await window.cutawan.applyCaptionLanguage(project.id).catch(() => null)
+    set({ captionSync: null })
+    const current = get().project
+    if (updated?.transcript && current?.id === updated.id) set({ project: { ...current, transcript: updated.transcript } })
+  },
 
   detectWebcam: async () => {
     const project = get().project

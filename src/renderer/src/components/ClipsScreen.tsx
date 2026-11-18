@@ -18,6 +18,7 @@ import { formatBytes, formatDuration } from '../lib/format'
 import { EditorialExplanation, EditorialRankingSummary, EditorialScore } from './EditorialSummary'
 import MissingSourceBanner from './MissingSourceBanner'
 import StreamTemplateDialog from './StreamTemplateDialog'
+import CaptionSyncBanner from './CaptionSyncBanner'
 import DiscoverySummary from './DiscoverySummary'
 import type { Clip } from '@shared/types'
 import { findWholeVideoClip, highlightClips } from '@shared/wholeVideo'
@@ -109,6 +110,7 @@ export default function ClipsScreen(): React.JSX.Element {
         </div>
 
         <MissingSourceBanner />
+        <CaptionSyncBanner />
         <DiscoverySummary report={project.discoveryReport} earlierAttempt={!!project.discoveryReport?.generationId && project.discoveryReport.generationId !== project.clipsGenerationId} />
         <EditorialRankingSummary report={project.editorialRanking} earlierAttempt={earlierRanking} />
 

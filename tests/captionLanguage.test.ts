@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Project, Transcript } from '@shared/types'
-import { applyTranslations, distributeWords, restoreOriginal } from '@shared/captionLanguage'
+import { applyTranslations, distributeWords, mayNeedUkrainian, restoreOriginal, segmentsToTranslate } from '@shared/captionLanguage'
 
 const calls = vi.hoisted(() => ({ chat: [] as string[], saved: 0, fail: false }))
 vi.mock('../src/main/pipeline/openai', () => ({
@@ -8,7 +8,7 @@ vi.mock('../src/main/pipeline/openai', () => ({
     calls.chat.push(messages[1].content)
     if (calls.fail) throw new Error('down')
     const lines = JSON.parse(messages[1].content) as Array<{ id: number; text: string }>
-    return { lines: lines.filter((l) => /[ыэъё]/i.test(l.text)).map((l) => ({ id: l.id, uk: 'а що це взагалі таке' })) }
+    return { lines: lines.map((l) => ({ id: l.id, uk: /[ыэъё]/i.test(l.text) ? 'а що це взагалі таке' : l.text })) }
   })
 }))
 vi.mock('../src/main/projects', () => ({ updateProject: vi.fn(async (_id: string, fn: (p: unknown) => void) => { calls.saved++; fn({ video: { path: '/v' } }) }) }))
@@ -19,7 +19,8 @@ function transcript(): Transcript {
     language: 'uk', durationSec: 10, whisperLanguage: 'auto',
     segments: [
       { id: 0, text: 'привіт друзі', start: 0, end: 1, words: [{ text: 'привіт', start: 0, end: 0.4 }, { text: 'друзі', start: 0.5, end: 1 }] },
-      { id: 1, text: 'а что это вообще такое', start: 2, end: 4, words: [{ text: 'а', start: 2, end: 2.1 }] }
+      { id: 1, text: 'а что это вообще такое', start: 2, end: 4, words: [{ text: 'а', start: 2, end: 2.1 }] },
+      { id: 2, text: 'да нормально', start: 5, end: 6, words: [{ text: 'да', start: 5, end: 5.4 }, { text: 'нормально', start: 5.5, end: 6 }] }
     ]
   }
 }
@@ -44,6 +45,24 @@ describe('caption language helpers', () => {
     expect(back.segments[1].text).toBe('а что это вообще такое')
     expect(back.segments[1].words).toEqual(t.segments[1].words)
     expect(back.segments[1].original).toBeUndefined()
+  })
+})
+
+describe('which lines go to the translator', () => {
+  it('sends Russian, English and ambiguous Cyrillic, keeps clearly Ukrainian lines', () => {
+    expect(mayNeedUkrainian('а что это вообще такое')).toBe(true)
+    expect(mayNeedUkrainian('nice shot bro')).toBe(true)
+    expect(mayNeedUkrainian('да нормально')).toBe(true)
+    expect(mayNeedUkrainian('привіт друзі')).toBe(false)
+    expect(mayNeedUkrainian('їжак')).toBe(false)
+    expect(mayNeedUkrainian('...')).toBe(false)
+  })
+  it('skips translated and confirmed lines', () => {
+    const t = transcript()
+    expect(segmentsToTranslate(t).map((s) => s.id)).toEqual([1, 2])
+    const after = applyTranslations(t, new Map([[1, 'а що це взагалі таке'], [2, 'да нормально']]), 'uk')
+    expect(after.segments[2].checkedUk).toBe(true)
+    expect(segmentsToTranslate(after)).toEqual([])
   })
 })
 
@@ -73,9 +92,18 @@ describe('ensureCaptionLanguage', () => {
     expect(await ensureCaptionLanguage(p, 'uk', { apiKey: null, model: 'm' }, () => {}, 0.5)).toBe(p.transcript)
     calls.fail = true
     const out = await ensureCaptionLanguage(p, 'uk', { apiKey: 'k', model: 'm' }, () => {}, 0.5)
-    expect(out?.captionLanguage).toBeUndefined()
+    expect(out?.segments[1].text).toBe('а что это вообще такое')
     calls.fail = false
     const again = await ensureCaptionLanguage(p, 'uk', { apiKey: 'k', model: 'm' }, () => {}, 0.5)
-    expect(again?.captionLanguage).toBe('uk')
+    expect(again?.segments[1].text).toBe('а що це взагалі таке')
+  })
+
+  it('catches up a project marked Ukrainian whose lines were never translated', async () => {
+    const p = project()
+    p.transcript = { ...p.transcript!, captionLanguage: 'uk' }
+    const out = await ensureCaptionLanguage(p, 'uk', { apiKey: 'k', model: 'm' }, () => {}, 0.5)
+    expect(out?.segments[1].text).toBe('а що це взагалі таке')
+    expect(calls.chat).toHaveLength(1)
+    expect(JSON.parse(calls.chat[0]).map((l: { id: number }) => l.id)).toEqual([1, 2])
   })
 })

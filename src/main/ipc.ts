@@ -23,6 +23,7 @@ import { captionWholeVideo } from './pipeline/wholeVideo'
 import { downloadGpuFfmpeg } from './pipeline/encoders'
 import { probeTracksAndMarkers, probeVideo } from './pipeline/ffmpeg'
 import { detectWebcam } from './pipeline/webcamDetect'
+import { ensureCaptionLanguage } from './pipeline/captionLanguage'
 import { getTimeline } from './pipeline/timeline'
 import { renderClip } from './pipeline/render'
 import { ensureClipReframe } from './pipeline/reframe'
@@ -37,6 +38,7 @@ import { exportBaseName, uniqueOutputPath } from './exportPath'
 import { deleteProject, listProjects, loadProject, updateProject } from './projects'
 import {
   getAnalysisCredential,
+  getCaptionLanguage,
   getBrandingSettings,
   getBrandVoiceSettings,
   getExportPreferences,
@@ -236,6 +238,14 @@ export function registerIpcHandlers(): void {
       p.video.audioTracks = probed.audioTracks
       p.video.markers = probed.markers
     })
+  })
+
+  handle('project:applyCaptionLanguage', async (_e, projectId: string) => {
+    const project = await loadProject(projectId)
+    if (!project.transcript) return project
+    await ensureCaptionLanguage(project, getCaptionLanguage(),
+      { apiKey: getAnalysisCredential() || null, model: getModelPreferences().analysisModel }, () => {}, 0)
+    return loadProject(projectId)
   })
 
   handle('project:detectWebcam', async (_e, projectId: string) => {

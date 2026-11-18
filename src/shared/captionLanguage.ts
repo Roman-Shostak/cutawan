@@ -27,27 +27,50 @@ export function restoreOriginal(transcript: Transcript): Transcript {
     captionLanguage: 'original',
     segments: transcript.segments.map((seg) => {
       if (!seg.original) return seg
-      const { original, ...rest } = seg
+      const { original, checkedUk: _checked, ...rest } = seg
       return { ...rest, text: original.text, words: original.words }
     })
   }
 }
 
 /**
- * Put translated text into the segments that need it, keeping what Whisper
- * heard so "original" can bring it back. Segments without an entry are
- * already in the target language and stay as they are.
+ * Whether a recognised line may not be Ukrainian and should go to the
+ * translator: Russian-only letters, mostly Latin text, or Cyrillic with none
+ * of the letters only Ukrainian has (і ї є ґ), which short Russian and
+ * Ukrainian lines share and only a reader can tell apart. Lines with
+ * Ukrainian-only letters and no Russian-only ones are left alone.
+ */
+export function mayNeedUkrainian(text: string): boolean {
+  if (/[ыэъёЫЭЪЁ]/.test(text)) return true
+  const latin = (text.match(/[a-z]/gi) ?? []).length
+  const cyrillic = (text.match(/[\u0400-\u04ff]/g) ?? []).length
+  if (latin > cyrillic) return true
+  if (/[іїєґІЇЄҐ]/.test(text)) return false
+  return cyrillic >= 2
+}
+
+/** Segments still to send to the translator for Ukrainian captions. */
+export function segmentsToTranslate(transcript: Transcript): TranscriptSegment[] {
+  return transcript.segments.filter((seg) => !seg.original && !seg.checkedUk && mayNeedUkrainian(seg.text))
+}
+
+/**
+ * Put the translator's answers in: a changed line shows the translation and
+ * keeps what Whisper heard (so "original" can bring it back); an unchanged
+ * one is marked as checked so it is not sent again.
  */
 export function applyTranslations(transcript: Transcript, translations: Map<number, string>, language: CaptionLanguage): Transcript {
+  const norm = (t: string): string => t.trim().replace(/\s+/g, ' ').toLowerCase()
   return {
     ...transcript,
     language: language === 'uk' ? 'uk' : transcript.language,
     captionLanguage: language,
     segments: transcript.segments.map((seg): TranscriptSegment => {
-      const text = translations.get(seg.id)?.trim()
-      if (!text || text === seg.text.trim()) return seg
+      const answer = translations.get(seg.id)?.trim()
+      if (answer === undefined || answer === '') return seg
+      if (norm(answer) === norm(seg.text)) return { ...seg, checkedUk: true }
       const original = seg.original ?? { text: seg.text, words: seg.words }
-      return { ...seg, text, words: distributeWords(text, seg.start, seg.end), original }
+      return { ...seg, text: answer, words: distributeWords(answer, seg.start, seg.end), original }
     })
   }
 }

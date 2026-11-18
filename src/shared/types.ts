@@ -102,6 +102,8 @@ export interface TranscriptSegment {
   energy?: number
   /** What Whisper heard, kept when the captions show a translation of it. */
   original?: { text: string; words: TranscriptWord[] }
+  /** The translator confirmed this line is already Ukrainian (not sent again). */
+  checkedUk?: boolean
 }
 
 /**

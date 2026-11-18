@@ -67,6 +67,9 @@ const api = {
   /** Probe a project's audio tracks (older projects saved before tracks were recorded). */
   probeAudioTracks: (projectId: string): Promise<Project> =>
     ipcRenderer.invoke('project:probeAudioTracks', projectId),
+  /** Bring the saved captions to the chosen caption language; returns the project. */
+  applyCaptionLanguage: (projectId: string): Promise<Project> =>
+    ipcRenderer.invoke('project:applyCaptionLanguage', projectId),
   /** Find the webcam in the recording once (needs an analysis key); returns the project. */
   detectWebcam: (projectId: string): Promise<Project> =>
     ipcRenderer.invoke('project:detectWebcam', projectId),
