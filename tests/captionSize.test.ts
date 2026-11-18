@@ -9,6 +9,9 @@ import type { Transcript } from '@shared/types'
 const FONTS = join(process.cwd(), 'resources', 'fonts')
 const anton = parseFontMetrics(readFileSync(join(FONTS, 'Anton-Regular.ttf')))
 const poppins = parseFontMetrics(readFileSync(join(FONTS, 'Poppins-Bold.ttf')))
+const oswald = parseFontMetrics(readFileSync(join(FONTS, 'Oswald-Bold.ttf')))
+const montserrat = parseFontMetrics(readFileSync(join(FONTS, 'Montserrat-Bold.ttf')))
+const montserratMedium = parseFontMetrics(readFileSync(join(FONTS, 'Montserrat-Medium.ttf')))
 
 function transcript(): Transcript {
   return {
@@ -71,7 +74,12 @@ describe('buildAss font sizing', () => {
   it('emits the converted size for every preset', () => {
     for (const preset of CAPTION_STYLES) {
       const style = resolveCaptionStyle(preset.id)
-      const metrics = style.fontFamily.startsWith('Poppins') ? poppins : anton
+      const metrics =
+        style.fontFamily === 'Montserrat Medium'
+          ? montserratMedium
+          : style.fontFamily.startsWith('Montserrat')
+            ? montserrat
+            : oswald
       const ass = buildAss(transcript(), { ...base, styleId: preset.id, fontMetrics: metrics })
       expect(captionFontSize(ass)).toBe(assFontSize(style.fontScale * base.height, metrics))
     }

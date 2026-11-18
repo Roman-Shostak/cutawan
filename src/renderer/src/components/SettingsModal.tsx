@@ -39,8 +39,24 @@ import type {
 
 const ANALYSIS_MODELS = ['gpt-5.4-mini', 'gpt-5.4', 'gpt-5.5', 'gpt-4o-mini']
 
+/** Anthropic's OpenAI-compatible endpoint and the Claude models offered for it. */
+const ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1'
+const CLAUDE_MODELS = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5']
+
+/** True when the API base URL points at Anthropic, so Claude models are suggested. */
+function isAnthropicBaseUrl(url: string): boolean {
+  return /(^|\.|\/\/)anthropic\.com(\/|$)/i.test(url.trim())
+}
+
+/** One-click endpoint presets for the OpenAI-compatible route. */
+const ENDPOINT_PRESETS: Array<{ id: string; label: string; baseUrl: string; model: string }> = [
+  { id: 'openai', label: 'OpenAI', baseUrl: '', model: 'gpt-5.4-mini' },
+  { id: 'anthropic', label: 'Anthropic (Claude)', baseUrl: ANTHROPIC_BASE_URL, model: 'claude-haiku-5-5' }
+]
+
 /** Whisper transcription languages. 'auto' lets Whisper detect per video. */
 const TRANSCRIPTION_LANGUAGES: Array<{ value: string; label: string }> = [
+  { value: 'uk', label: 'Українська' },
   { value: 'en', label: 'English' },
   { value: 'auto', label: 'Auto-detect' },
   { value: 'cy', label: 'Welsh' },
@@ -120,7 +136,7 @@ export default function SettingsModal(): React.JSX.Element {
       await saveSettings({
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
         subscription,
-        analysisModel: model,
+        ...(model.trim() ? { analysisModel: model.trim() } : {}),
         openaiBaseUrl,
         transcriptionBaseUrl,
         openRouterModel: openRouter.model,
@@ -234,9 +250,37 @@ export default function SettingsModal(): React.JSX.Element {
           </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
             OpenAI-compatible endpoint for analysis (and transcription, unless you set a
-            separate one below). Azure OpenAI, OpenRouter, Groq, LM Studio, Ollama. Leave
-            blank for api.openai.com.
+            separate one below). Azure OpenAI, Anthropic, OpenRouter, Groq, LM Studio, Ollama.
+            Leave blank for api.openai.com. Anthropic has no Whisper, so pair it with local
+            transcription above.
           </p>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {ENDPOINT_PRESETS.map((preset) => {
+              const active =
+                preset.id === 'anthropic'
+                  ? isAnthropicBaseUrl(openaiBaseUrl)
+                  : openaiBaseUrl.trim() === ''
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  data-testid={`endpoint-preset-${preset.id}`}
+                  disabled={settings?.openaiBaseUrlFromEnv}
+                  onClick={() => {
+                    setOpenaiBaseUrl(preset.baseUrl)
+                    setModel(preset.model)
+                  }}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                    active
+                      ? 'border-white/30 bg-white/[0.07] text-zinc-100'
+                      : 'border-surface-600 text-zinc-400 hover:bg-surface-800'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
           {settings?.openaiBaseUrlFromEnv && (
             <p className="mt-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-400">
               OPENAI_BASE_URL is set in the environment, so it overrides these fields until
@@ -277,11 +321,23 @@ export default function SettingsModal(): React.JSX.Element {
             Analysis model
           </label>
           <p className="mt-1 text-xs text-zinc-500">
-            gpt-5.4-mini is fast and cheap; gpt-5.4 and gpt-5.5 pick moments more carefully.
-            gpt-4o-mini is the budget legacy option.
+            {isAnthropicBaseUrl(openaiBaseUrl)
+              ? 'claude-haiku-5-5 is fast and cheap; claude-sonnet-5-5 and claude-opus-5-5 pick moments more carefully.'
+              : 'gpt-5.4-mini is fast and cheap; gpt-5.4 and gpt-5.5 pick moments more carefully. gpt-4o-mini is the budget legacy option.'}{' '}
+            Any model id your endpoint serves can be typed below.
           </p>
-          <div className="mt-2.5 grid grid-cols-2 gap-2">
-            {ANALYSIS_MODELS.map((m) => (
+          <input
+            data-testid="analysis-model"
+            type="text"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            onBlur={() => setModel((current) => current.trim())}
+            placeholder={isAnthropicBaseUrl(openaiBaseUrl) ? 'claude-haiku-5-5' : 'gpt-5.4-mini'}
+            spellCheck={false}
+            className="mt-2.5 w-full rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 font-mono text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/25 focus:outline-none"
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(isAnthropicBaseUrl(openaiBaseUrl) ? CLAUDE_MODELS : ANALYSIS_MODELS).map((m) => (
               <button
                 key={m}
                 onClick={() => setModel(m)}
@@ -304,11 +360,11 @@ export default function SettingsModal(): React.JSX.Element {
             Transcription language
           </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            The spoken language Whisper transcribes. Leave on English (or pick yours) rather than
+            The spoken language Whisper transcribes. Pick the language you speak rather than
             Auto-detect — auto sometimes mislabels the language (e.g. English as Welsh).
           </p>
           <select
-            value={settings?.transcriptionLanguage ?? 'en'}
+            value={settings?.transcriptionLanguage ?? 'uk'}
             onChange={(e) => void saveSettings({ transcriptionLanguage: e.target.value })}
             className="mt-2.5 w-full rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 focus:border-white/25 focus:outline-none"
           >

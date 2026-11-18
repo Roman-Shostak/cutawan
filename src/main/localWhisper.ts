@@ -95,8 +95,13 @@ export async function installLocalWhisper(
       }
     }
     announce(0.2, 'Installing faster-whisper in the private environment…')
-    await run(paths.python, ['-m', 'pip', 'install', '--disable-pip-version-check', 'faster-whisper', 'huggingface-hub'],
-      controller.signal, message => announce(0.3, message))
+    // PyAV 15+ dropped the `metadata_errors` argument that faster-whisper's
+    // decode_audio still passes, so every transcription fails with a TypeError.
+    // Keep PyAV below 15 and wheels-only: pip then picks the newest 14.x that
+    // ships a prebuilt wheel for this platform instead of compiling from source.
+    await run(paths.python, ['-m', 'pip', 'install', '--disable-pip-version-check', 'faster-whisper', 'huggingface-hub',
+      'av>=11,<15', '--only-binary=av'],
+    controller.signal, message => announce(0.3, message))
     // Apple Silicon also gets the MLX build, which transcribes on the GPU.
     // Optional: the CPU path still works if it cannot be installed.
     let gpu = false

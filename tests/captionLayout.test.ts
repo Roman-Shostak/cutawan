@@ -123,17 +123,18 @@ describe('captionLayoutBudget', () => {
     expect(vertical.maxLines).toBe(2)
   })
 
-  it('keeps a vertical Beast caption to roughly twenty characters per line', () => {
-    // Anton at 5.2% of the frame height on a 1080-wide frame: about 21 glyphs.
+  it('keeps a vertical Beast caption to roughly sixteen characters per line', () => {
+    // Oswald at 5.2% of the frame height on a 1080-wide frame: about 16 glyphs
+    // (Cyrillic capitals run wider than Latin ones, so the budget is tighter).
     const budget = captionLayoutBudget(getCaptionStyle('beast'), 9 / 16)
     const chars = budget.lineWidthEm / budget.glyphWidthEm
-    expect(chars).toBeGreaterThan(17)
-    expect(chars).toBeLessThan(24)
+    expect(chars).toBeGreaterThan(14)
+    expect(chars).toBeLessThan(20)
   })
 
   it('uses the wider uppercase glyph average for shouting styles', () => {
-    const shouting = captionLayoutBudget(getCaptionStyle('crimson'), 1) // Poppins, uppercase
-    const quiet = captionLayoutBudget(getCaptionStyle('karaoke'), 1) // Poppins, mixed case
+    const shouting = captionLayoutBudget(getCaptionStyle('crimson'), 1) // Montserrat, uppercase
+    const quiet = captionLayoutBudget(getCaptionStyle('karaoke'), 1) // Montserrat, mixed case
     expect(shouting.glyphWidthEm).toBeGreaterThan(quiet.glyphWidthEm)
   })
 
@@ -162,5 +163,23 @@ describe('groupDisplayEnd', () => {
 
   it('never holds past the clip end', () => {
     expect(groupDisplayEnd(groups, 1, 6)).toBe(6)
+  })
+})
+
+describe('over-long words', () => {
+  const at = (text: string, i: number): TranscriptWord => ({ text, start: i * 0.4, end: i * 0.4 + 0.3 })
+
+  it('shrinks a single word wider than a whole line instead of overflowing', () => {
+    const budget = captionLayoutBudget(getCaptionStyle('beast'), 9 / 16)
+    const [group] = groupWords([at('військовослужбовців', 0)], budget)
+    expect(group.lines).toHaveLength(1)
+    expect(group.lineScales[0]).toBeLessThan(1)
+    expect(group.lineScales[0]).toBeGreaterThanOrEqual(0.55)
+  })
+
+  it('leaves lines that fit at the style size', () => {
+    const budget = captionLayoutBudget(getCaptionStyle('beast'), 9 / 16)
+    const groups = groupWords([at('наш', 0), at('захист', 1), at('життя', 2)], budget)
+    expect(groups.flatMap((g) => g.lineScales)).toEqual(groups.flatMap((g) => g.lines.map(() => 1)))
   })
 })

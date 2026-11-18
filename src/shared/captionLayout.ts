@@ -16,6 +16,13 @@ export interface WordGroup {
   words: TranscriptWord[]
   /** `words` split into the display lines they are drawn on, in order. */
   lines: TranscriptWord[][]
+  /**
+   * Per-line size factor (1 = style size). Below 1 only for a line holding a
+   * single word longer than a whole line — common with long Ukrainian words
+   * such as «військовослужбовців» — which is shrunk to fit instead of running
+   * off both edges of the frame.
+   */
+  lineScales: number[]
   start: number
   end: number
 }
@@ -51,17 +58,27 @@ export const CAPTION_SAFE_WIDTH = 0.9
 
 /**
  * Frequency-weighted average glyph advance, in em, for the bundled caption
- * fonts (measured from their hmtx tables over English letter frequencies).
- * Uppercase runs wider in most faces, so styles that shout get their own
- * figure. Unknown families (user uploads) use a deliberately wide default so a
- * line is more likely to come up short than to overflow.
+ * fonts (measured from their hmtx tables over English and Ukrainian letter
+ * frequencies, keeping the wider of the two — Cyrillic runs wider than Latin
+ * in every face we ship). Uppercase runs wider in most faces, so styles that
+ * shout get their own figure. Unknown families (user uploads) use a
+ * deliberately wide default so a line is more likely to come up short than to
+ * overflow.
+ *
+ * The caption styles use Oswald and Montserrat because both cover Cyrillic.
+ * Anton and Poppins (the upstream defaults) have no Cyrillic glyphs, so
+ * libass silently fell back to a much wider system face and Ukrainian
+ * captions overflowed the frame.
  */
 const GLYPH_WIDTH_EM: Record<string, { lower: number; upper: number }> = {
+  Oswald: { lower: 0.49, upper: 0.56 },
+  Montserrat: { lower: 0.64, upper: 0.75 },
+  'Montserrat Medium': { lower: 0.61, upper: 0.74 },
   Anton: { lower: 0.45, upper: 0.46 },
   Poppins: { lower: 0.58, upper: 0.65 },
   'Poppins Medium': { lower: 0.56, upper: 0.63 }
 }
-const DEFAULT_GLYPH_WIDTH_EM = { lower: 0.62, upper: 0.7 }
+const DEFAULT_GLYPH_WIDTH_EM = { lower: 0.66, upper: 0.76 }
 /** A space is narrower than a letter in every face we ship. */
 const SPACE_WIDTH_EM = 0.26
 /**
@@ -104,14 +121,31 @@ function wordWidthEm(text: string, glyphWidthEm: number): number {
 }
 
 /**
+ * Headroom when shrinking an over-long word: the glyph average underestimates
+ * words heavy in wide letters (Ж, Ш, Щ, Ю, М), so shrink a little further.
+ */
+const OVERSIZE_SHRINK_MARGIN = 0.92
+/** Never shrink a word below this share of the style size; it stays legible. */
+const MIN_LINE_SCALE = 0.55
+
+/** Size factor for one laid-out line: 1 unless it is wider than the budget. */
+export function lineScaleFor(line: TranscriptWord[], budget: CaptionLayoutBudget): number {
+  const width =
+    line.reduce((sum, w) => sum + wordWidthEm(w.text, budget.glyphWidthEm), 0) +
+    SPACE_WIDTH_EM * Math.max(0, line.length - 1)
+  if (width <= budget.lineWidthEm) return 1
+  return Math.max(MIN_LINE_SCALE, (budget.lineWidthEm / width) * OVERSIZE_SHRINK_MARGIN)
+}
+
+/**
  * Group words into caption cards and lay each card out into lines.
  *
  * A group breaks on the style's word cap, on a long pause, after a sentence
  * end, or when the next word would need a third line. Within a group, words
  * fill the current line until the next word would overflow the em budget,
  * then start a new line. A single word wider than a whole line still gets a
- * line to itself — it cannot be split, and overflowing one line beats
- * dropping the word.
+ * line to itself — it cannot be split — and that line is shrunk to fit
+ * (see `lineScales`) rather than overflowing the frame.
  */
 export function groupWords(words: TranscriptWord[], budget: CaptionLayoutBudget): WordGroup[] {
   const groups: WordGroup[] = []
@@ -127,6 +161,7 @@ export function groupWords(words: TranscriptWord[], budget: CaptionLayoutBudget)
     groups.push({
       words: flat,
       lines,
+      lineScales: lines.map((line) => lineScaleFor(line, budget)),
       start: flat[0].start,
       end: flat[flat.length - 1].end
     })

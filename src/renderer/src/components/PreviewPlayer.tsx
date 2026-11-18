@@ -523,7 +523,7 @@ function CaptionOverlay({
           className="whitespace-nowrap"
           style={{
             fontFamily: `'${style.fontFamily}', sans-serif`,
-            fontSize: `${style.fontScale * 100}cqh`,
+            fontSize: `${style.fontScale * 100 * (group.lineScales?.[li] ?? 1)}cqh`,
             fontWeight: style.bold ? 700 : 400,
             lineHeight: 1.25,
             textShadow:

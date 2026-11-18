@@ -7,6 +7,7 @@ import type {
   Transcript
 } from '@shared/types'
 import { DEFAULT_CAPTION_STYLE_ID } from '@shared/captionStyles'
+import { outputLanguageInstruction } from '@shared/outputLanguage'
 import { initialClipEditForVideoType } from '@shared/videoType'
 import {
   normalizeClipEnd,
@@ -649,6 +650,10 @@ async function requestHighlights(
   const userPrompt = [
     `Video duration: ${videoDurationSec.toFixed(1)} seconds.`,
     lengthGuidance(options.clipLength),
+    outputLanguageInstruction(
+      transcript.language,
+      'every text field (title, hook, summary, payoff, virality_reason and hashtags)'
+    ),
     insist
       ? 'You MUST return at least 3 clips. Even if no moment feels exceptional, select the 3 strongest available moments and score them honestly (low scores are fine). All timestamps are in seconds from the start of the video. Express "start" and "end" as plain seconds (e.g. 132.4).'
       : `Aim for about ${targetCount} clips spread across the whole video. Be generous: return every distinct moment strong enough to stand alone as a clip and let honest scores rank them — err on the side of more clips rather than fewer (at least ${Math.min(4, targetCount)}; fewer only if the material genuinely cannot support more). All timestamps are in seconds from the start of the video. Express "start" and "end" as plain seconds (e.g. 132.4).`,

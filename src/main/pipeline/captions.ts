@@ -14,8 +14,8 @@ import {
 } from '@shared/captionLayout'
 
 /**
- * Bundled caption fonts (Anton, Poppins — OFL licensed) so exports render
- * identically on every OS instead of falling back to system fonts.
+ * Bundled caption fonts (Oswald, Montserrat with Cyrillic; Anton, Poppins — all OFL
+ * licensed) so exports render identically on every OS instead of falling back to system fonts.
  * `app` is undefined when running outside Electron (test scripts).
  */
 export function fontsDir(): string {
@@ -67,27 +67,32 @@ function renderGroupText(group: WordGroup, activeIndex: number, style: CaptionSt
   const base = assColor(style.textColor)
   const lines: string[] = []
   let index = 0
-  for (const line of group.lines) {
+  group.lines.forEach((line, li) => {
+    // An over-long single word is shrunk to fit its line (see lineScales).
+    // \\r resets scaling, so every word carries the line's size explicitly.
+    const scale = Math.round(100 * (group.lineScales?.[li] ?? 1))
+    const sized = scale === 100 ? '' : `\\fscx${scale}\\fscy${scale}`
+    const popped = Math.round(scale * 1.09)
     const parts: string[] = []
     for (const word of line) {
       const raw = escapeAss(word.text)
       const text = style.uppercase ? raw.toUpperCase() : raw
       if (index === activeIndex) {
-        const pop = '\\t(0,70,\\fscx109\\fscy109)'
+        const pop = `\\t(0,70,\\fscx${popped}\\fscy${popped})`
         if (style.highlightBoxColor) {
           // Fat outline in the pill colour approximates a rounded label.
           const pill = assColor(style.highlightBoxColor)
-          parts.push(`{\\c${highlight}\\bord10\\3c${pill}\\fscx100\\fscy100${pop}}${text}{\\r}`)
+          parts.push(`{\\c${highlight}\\bord10\\3c${pill}\\fscx${scale}\\fscy${scale}${pop}}${text}{\\r}`)
         } else {
-          parts.push(`{\\c${highlight}\\fscx100\\fscy100${pop}}${text}{\\r}`)
+          parts.push(`{\\c${highlight}\\fscx${scale}\\fscy${scale}${pop}}${text}{\\r}`)
         }
       } else {
-        parts.push(`{\\c${base}}${text}{\\r}`)
+        parts.push(`{\\c${base}${sized}}${text}{\\r}`)
       }
       index++
     }
     lines.push(parts.join(' '))
-  }
+  })
   // Hard line breaks: the layout decided the lines (\\q2 on the event keeps
   // libass from re-wrapping them).
   return lines.join('\\N')

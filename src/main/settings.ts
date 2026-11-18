@@ -65,11 +65,10 @@ const DEFAULTS: StoredSettings = {
   subscription: { ...DEFAULT_SUBSCRIPTION },
   apiKeyEncrypted: '',
   transcriptionModel: 'whisper-1',
-  // Default to English rather than Whisper's auto-detect: the app is
-  // English-first, and auto-detect occasionally mislabels English speech as a
-  // similar-sounding language (e.g. Welsh). Users of other languages can pick
-  // theirs — or 'auto' — in Settings.
-  transcriptionLanguage: 'en',
+  // This fork targets Ukrainian streams, so default to Ukrainian rather than
+  // Whisper's auto-detect (which can mislabel speech as a similar-sounding
+  // language). Other languages — or 'auto' — can be picked in Settings.
+  transcriptionLanguage: 'uk',
   analysisModel: 'gpt-5.4-mini',
   openRouterKeyEncrypted: '',
   openRouterModel: DEFAULT_OPENROUTER_MODEL,

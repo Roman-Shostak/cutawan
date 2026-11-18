@@ -34,7 +34,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'beast',
     name: 'Beast',
-    fontFamily: 'Anton',
+    fontFamily: 'Oswald',
     fontScale: 0.052,
     uppercase: true,
     textColor: '#FFFFFF',
@@ -50,7 +50,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'karaoke',
     name: 'Karaoke',
-    fontFamily: 'Poppins',
+    fontFamily: 'Montserrat',
     fontScale: 0.046,
     uppercase: false,
     textColor: '#FFFFFF',
@@ -66,7 +66,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'pill',
     name: 'Pill',
-    fontFamily: 'Anton',
+    fontFamily: 'Oswald',
     fontScale: 0.044,
     uppercase: true,
     textColor: '#FFFFFF',
@@ -82,7 +82,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'minimal',
     name: 'Minimal',
-    fontFamily: 'Poppins Medium',
+    fontFamily: 'Montserrat Medium',
     fontScale: 0.038,
     uppercase: false,
     textColor: '#FFFFFF',
@@ -98,7 +98,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'hormozi',
     name: 'Hormozi',
-    fontFamily: 'Anton',
+    fontFamily: 'Oswald',
     fontScale: 0.05,
     uppercase: true,
     textColor: '#FFFFFF',
@@ -114,7 +114,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'neon',
     name: 'Neon',
-    fontFamily: 'Poppins',
+    fontFamily: 'Montserrat',
     fontScale: 0.046,
     uppercase: false,
     textColor: '#FFFFFF',
@@ -130,7 +130,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'ember',
     name: 'Ember',
-    fontFamily: 'Anton',
+    fontFamily: 'Oswald',
     fontScale: 0.052,
     uppercase: true,
     textColor: '#FFF7ED',
@@ -146,7 +146,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'bubble',
     name: 'Bubble',
-    fontFamily: 'Poppins',
+    fontFamily: 'Montserrat',
     fontScale: 0.042,
     uppercase: false,
     textColor: '#FFFFFF',
@@ -162,7 +162,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'lemon',
     name: 'Lemon',
-    fontFamily: 'Anton',
+    fontFamily: 'Oswald',
     fontScale: 0.046,
     uppercase: true,
     textColor: '#FFFFFF',
@@ -178,7 +178,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'retro',
     name: 'Retro',
-    fontFamily: 'Anton',
+    fontFamily: 'Oswald',
     fontScale: 0.05,
     uppercase: true,
     textColor: '#FDE68A',
@@ -194,7 +194,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'crimson',
     name: 'Crimson',
-    fontFamily: 'Poppins',
+    fontFamily: 'Montserrat',
     fontScale: 0.048,
     uppercase: true,
     textColor: '#FFFFFF',
@@ -210,7 +210,7 @@ export const CAPTION_STYLES: CaptionStyle[] = [
   {
     id: 'whisper',
     name: 'Whisper',
-    fontFamily: 'Poppins Medium',
+    fontFamily: 'Montserrat Medium',
     fontScale: 0.034,
     uppercase: false,
     textColor: '#E4E4E7',

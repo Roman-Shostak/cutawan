@@ -1,4 +1,5 @@
 import type { BrandVoiceSettings, Clip, Transcript } from '@shared/types'
+import { outputLanguageInstruction } from '@shared/outputLanguage'
 import { wordsInRange } from '@shared/captionLayout'
 import { chatJSON } from './openai'
 
@@ -79,6 +80,7 @@ export async function generateSocialCaption(
     clip.hashtags.length > 0 ? `Suggested topic tags: ${clip.hashtags.join(', ')}` : '',
     excerpt ? `Transcript of the clip:\n"${excerpt}"` : '',
     brandVoiceGuidance(voice) ?? '',
+    outputLanguageInstruction(transcript?.language, 'the caption'),
     'Write the caption.'
   ]
     .filter(Boolean)
