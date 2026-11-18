@@ -33,6 +33,8 @@ export function applyStreamTemplate(clip: Clip, template: StreamTemplate, video:
       reframeMode: 'crop',
       framing: 'auto',
       autoZoom: false,
+      // Quiet stretches in gameplay are often the tense ones: keep pauses.
+      tightenCuts: false,
       layoutChosen: true,
       compositionPreference: 'auto'
     }

@@ -32,6 +32,7 @@ import { EditorialExplanation, EditorialScore } from './EditorialSummary'
 import { editorialAssessmentCurrent } from '@shared/editorialRanking'
 import TranscriptEditor from './TranscriptEditor'
 import GameDialogueEditor from './GameDialogueEditor'
+import StreamTemplateDialog from './StreamTemplateDialog'
 import { ExportButton } from './ClipsScreen'
 import SizeTargetControls from './SizeTargetControls'
 import { CAPTION_STYLES, resolveCaptionStyle } from '@shared/captionStyles'
@@ -54,6 +55,7 @@ const ASPECTS: Array<{ value: AspectRatio; label: string }> = [
 
 export default function EditorScreen(): React.JSX.Element {
   const project = useStore((s) => s.project)
+  const [templateOpen, setTemplateOpen] = useState(false)
   const selectedClipId = useStore((s) => s.selectedClipId)
   const updateClip = useStore((s) => s.updateClip)
   const updateClipLocal = useStore((s) => s.updateClipLocal)
@@ -239,6 +241,17 @@ export default function EditorScreen(): React.JSX.Element {
             ))}
           </div>
           <CompositionControls clip={clip} />
+          {clip.edit.aspect === '9:16' && !wholeVideo && (
+            <button
+              type="button"
+              onClick={() => setTemplateOpen(true)}
+              className="mt-3 w-full rounded-lg border border-surface-600 px-3 py-2 text-left text-xs text-zinc-300 transition hover:bg-surface-800"
+              data-testid="editor-stream-template-button"
+            >
+              Шаблон «Мій стрім» — вебка зверху, гра знизу…
+            </button>
+          )}
+          {templateOpen && <StreamTemplateDialog project={project} onClose={() => setTemplateOpen(false)} />}
           {!cropDisabled && (
             <>
               <div className="mt-3 grid grid-cols-3 gap-1.5">

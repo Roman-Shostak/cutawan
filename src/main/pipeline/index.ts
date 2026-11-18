@@ -48,7 +48,8 @@ export async function createProject(videoPath: string): Promise<Project> {
     transcript: null,
     clips: [],
     prompt: '',
-    videoType: 'auto'
+    // This fork is for game streams: new videos start in that mode.
+    videoType: 'gaming-stream'
   }
   await saveProject(project)
   return project
@@ -93,7 +94,8 @@ export async function createProjectFromUrl(
     transcript: null,
     clips: [],
     prompt: '',
-    videoType: 'auto'
+    // This fork is for game streams: new videos start in that mode.
+    videoType: 'gaming-stream'
   }
   await saveProject(project)
   onProgress({ progress: 1, message: 'Готово' })

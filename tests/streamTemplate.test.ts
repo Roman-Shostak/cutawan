@@ -10,7 +10,7 @@ import {
 } from '@shared/composition'
 import { applyStreamTemplate, clipGameSubtitleTop, clipStreamTemplate } from '@shared/streamLayout'
 import { automaticLayoutShots, compositionHidesTitle, detailCaptionRanges } from '@shared/contentType'
-import { needsReframe } from '@shared/reframe'
+import { mergeClipSave, needsReframe } from '@shared/reframe'
 import { initialClipEditForVideoType, shouldAnalyzeFaces } from '@shared/videoType'
 
 const SOURCE = { width: 1920, height: 1080 }
@@ -110,6 +110,17 @@ describe('applyStreamTemplate', () => {
     expect(detailCaptionRanges(placed)[0].positionY).toBeCloseTo(.72)
     expect(compositionHidesTitle(placed)).toBe(true)
     expect(clipGameSubtitleTop(placed)).toBeGreaterThan(.3)
+  })
+
+  it('survives saving over an older analysed copy and turns pause-cutting off', () => {
+    const analysed = { ...clip, reframeStatus: 'done', reframeAnalysis: { start: 100, end: 130, version: 2 },
+      edit: { ...clip.edit, tightenCuts: true },
+      visualLayout: { start: 100, end: 130, preserveContext: true, allowZoom: false, reason: '', shots: [{ start: 100, end: 130, mode: 'fit' }] } } as unknown as Clip
+    const placed = applyStreamTemplate(analysed, template, video)
+    expect(placed.edit.tightenCuts).toBe(false)
+    const saved = mergeClipSave(placed, analysed, 'auto')
+    expect(clipStreamTemplate(saved)).toBeDefined()
+    expect(needsReframe(saved)).toBe(false)
   })
 
   it('a stream composition is not converted by the presenter presets', () => {

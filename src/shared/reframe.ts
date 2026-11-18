@@ -38,7 +38,14 @@ export function selectEagerReframeIds(ranked: Clip[]): Set<string> {
 }
 
 /** Whether a clip still needs its reframe analysis before it is fully framed. */
+/** A clip laid out on the creator's stream template, which spans the whole source. */
+function onStreamTemplate(clip: Pick<Clip, 'visualLayout'>): boolean {
+  return Boolean(clip.visualLayout?.shots?.some(s => s.composition?.preset === 'stream'))
+}
+
 export function needsReframe(clip: Clip): boolean {
+  // The stream template replaces face tracking and layout review entirely.
+  if (onStreamTemplate(clip) && clip.reframeStatus !== 'pending') return false
   const coverage = clip.reframeAnalysis ?? { start: clip.suggestedStart, end: clip.suggestedEnd }
   return clip.reframeStatus === 'pending' ||
     // Revisit old context-preserving letterboxes once when opened. Leave
@@ -108,6 +115,10 @@ export function layoutUntouched(edit: ClipEditState, videoType: VideoType): bool
  * the same clip.
  */
 export function mergeReframeResult(current: Clip, analysed: Clip, videoType: VideoType, retryLayout = false): Clip {
+  // A template the creator just applied wins over whatever analysis is on disk.
+  if (onStreamTemplate(current) && (current.visualLayout?.revision ?? 0) >= (analysed.visualLayout?.revision ?? 0)) {
+    return { ...current, focusTrack: null, reframeStatus: 'done' }
+  }
   const merged: Clip = {
     ...current,
     focusTrack: analysed.focusTrack,

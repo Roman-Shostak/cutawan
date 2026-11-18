@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
+  MonitorPlay,
   Download,
   Pencil,
   Check,
@@ -16,6 +17,7 @@ import { useStore } from '../store'
 import { formatBytes, formatDuration } from '../lib/format'
 import { EditorialExplanation, EditorialRankingSummary, EditorialScore } from './EditorialSummary'
 import MissingSourceBanner from './MissingSourceBanner'
+import StreamTemplateDialog from './StreamTemplateDialog'
 import DiscoverySummary from './DiscoverySummary'
 import type { Clip } from '@shared/types'
 import { findWholeVideoClip, highlightClips } from '@shared/wholeVideo'
@@ -31,6 +33,7 @@ export default function ClipsScreen(): React.JSX.Element {
   const chooseExportDir = useStore((s) => s.chooseExportDir)
   const goHome = useStore((s) => s.goHome)
   const [exportingAll, setExportingAll] = useState(false)
+  const [templateOpen, setTemplateOpen] = useState(false)
 
   if (!project) return <div />
 
@@ -44,6 +47,7 @@ export default function ClipsScreen(): React.JSX.Element {
 
   return (
     <div className="h-full overflow-y-auto">
+      {templateOpen && <StreamTemplateDialog project={project} onClose={() => setTemplateOpen(false)} />}
       <div className="mx-auto max-w-7xl px-8 py-8">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -57,6 +61,15 @@ export default function ClipsScreen(): React.JSX.Element {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setTemplateOpen(true)}
+              data-testid="stream-template-button"
+              title="Вебка зверху, гра знизу — для всіх кліпів без повторної генерації"
+              className="flex items-center gap-2 rounded-xl border border-surface-600 px-4 py-2.5 text-sm font-medium text-zinc-300 transition hover:bg-surface-800"
+            >
+              <MonitorPlay size={15} />
+              Шаблон стріму
+            </button>
             <button
               onClick={goHome}
               data-testid="regenerate-button"
