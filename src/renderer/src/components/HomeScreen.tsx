@@ -304,7 +304,7 @@ function SetupPanel(): React.JSX.Element {
   // is for game streams, so those start as one.
   const savedType = project.videoType && project.videoType !== 'auto' ? project.videoType : undefined
   const [videoType, setVideoType] = useState<VideoType>(
-    (hasClips ? savedType : undefined) ?? last?.videoType ?? savedType ?? 'gaming-stream')
+    (hasClips ? savedType : undefined) ?? (last?.videoType !== 'auto' ? last?.videoType : undefined) ?? savedType ?? 'gaming-stream')
   // Image inserts are hidden in this fork: they do not suit gameplay.
   const broll = false
   const [streamTemplate, setStreamTemplate] = useState<StreamTemplate>(
