@@ -26,6 +26,7 @@ import { timed } from './timing'
 import { loudnormFilter, measureLoudness, normalisationMode, type LoudnessStats } from './loudness'
 import { buildAss, fontsDir } from './captions'
 import { fontMetricsForFamily } from '../fonts'
+import { GAME_SUBTITLE_STYLE } from '@shared/gameDialogue'
 import { mediaJobs } from './mediaJobs'
 import {
   audioArgs,
@@ -582,6 +583,8 @@ export interface RenderJob {
   branding?: BrandingSettings | null
   /** Directory libass loads fonts from; defaults to the bundled fonts. */
   fontsDirPath?: string
+  /** Translated game-dialogue subtitles to burn, in source seconds (already filtered for the clip). */
+  gameLines?: Array<{ start: number; end: number; text: string }>
   /**
    * Hard ceiling for the finished file, in bytes. When set, the render becomes
    * a single size-targeted two-pass encode at the largest frame size the
@@ -644,7 +647,17 @@ async function render(job: RenderJob): Promise<RenderResult> {
   let captionTranscript = transcript
   let captionStart = start
   let captionEnd = clip.edit.end
+  let gameLines = job.gameLines ?? []
   if (map && segments) {
+    // Tightening ripples time: game lines move with the kept footage, and a
+    // line whose whole span was cut out goes with it.
+    gameLines = gameLines
+      .map((line) => {
+        const from = Math.max(start, line.start), until = Math.min(clip.edit.end, line.end)
+        const kept = segments.some((seg) => seg.end > from && seg.start < until)
+        return kept ? { ...line, start: map.toOutput(from), end: map.toOutput(until) } : null
+      })
+      .filter((line): line is NonNullable<typeof line> => line !== null && line.end - line.start > 0.05)
     effectiveClip = {
       ...clip,
       edit: { ...clip.edit, start: 0, end: outputDuration },
@@ -670,7 +683,8 @@ async function render(job: RenderJob): Promise<RenderResult> {
   }
 
   let assPath: string | null = null
-  if (clip.edit.captionsEnabled && captionTranscript) {
+  const voiceCaptions = clip.edit.captionsEnabled && !!captionTranscript
+  if (voiceCaptions || gameLines.length > 0) {
     // libass sizes text against the font's win ascent+descent, not the em
     // square the preview uses, so the ASS needs the resolved font's metrics
     // to come out the same size on screen (see assFontSize).
@@ -683,14 +697,20 @@ async function render(job: RenderJob): Promise<RenderResult> {
       job.fontsDirPath ?? fontsDir(),
       captionStyle.fontFamily
     )
-    const ass = buildAss(captionTranscript, {
+    const gameFontMetrics = gameLines.length
+      ? await fontMetricsForFamily(job.fontsDirPath ?? fontsDir(), GAME_SUBTITLE_STYLE.fontFamily)
+      : null
+    const ass = buildAss(captionTranscript ?? { language: '', durationSec: 0, segments: [] }, {
+      voiceCaptions,
+      gameLines,
+      gameFontMetrics,
       fontMetrics,
       styleId: clip.edit.captionStyleId,
       width: w,
       height: h,
       clipStart: captionStart,
       clipEnd: captionEnd,
-      title: clip.edit.showTitle && !compositionHidesTitle(effectiveClip) ? clip.hook || clip.title : undefined,
+      title: voiceCaptions && clip.edit.showTitle && !compositionHidesTitle(effectiveClip) ? clip.hook || clip.title : undefined,
       fontFamily: clip.edit.captionFontFamily ?? undefined,
       brandColors: job.branding?.colors,
       positionRanges: detailCaptionRanges(effectiveClip)

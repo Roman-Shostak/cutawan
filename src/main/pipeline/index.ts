@@ -7,6 +7,7 @@ import type { AnalyzeOptions, BrowserCookieSource, ImportProgress, PipelineProgr
 import { mapLimit } from './concurrency'
 import { extractThumbnail, probeVideo } from './ffmpeg'
 import { ensureTranscript } from './projectTranscript'
+import { applyGameDialogue } from './gameDialogue'
 import { dedupeClips, detectHighlights, maxDurationFor } from './highlights'
 import { discoverSourceMoments } from './sourceDiscovery'
 import { visualCandidateClip } from './visualCandidates'
@@ -124,6 +125,7 @@ function rethrowWithLoginHint(
 
 type ProgressFn = (p: PipelineProgress) => void
 
+
 /**
  * The full "get clips" pipeline: audio extraction -> Whisper transcription ->
  * LLM highlight detection -> per-clip thumbnails. Mutates and saves the
@@ -150,6 +152,8 @@ export async function analyzeProject(
   await mkdir(workDir, { recursive: true })
 
   try {
+    const routing = options.audioRouting
+    const gameTrack = routing?.gameTrack ?? null
     const transcript = await timed('transcript', () => ensureTranscript(
       project,
       workDir,
@@ -157,13 +161,16 @@ export async function analyzeProject(
         apiKey,
         model: settings.transcriptionModel,
         language: settings.transcriptionLanguage,
-        span: { from: 0.02, to: 0.58 },
-        noSpeechError: 'No speech was detected. Enable Find visual moments to look for demonstrations and visible events.',
-        allowNoSpeech: options.visualDiscovery === true
+        span: { from: 0.02, to: gameTrack === null ? 0.58 : 0.46 },
+        noSpeechError: 'Мову не знайдено. Увімкніть «Шукати візуальні моменти», щоб шукати демонстрації та видимі події.',
+        allowNoSpeech: options.visualDiscovery === true,
+        audioTrack: routing?.voiceTrack ?? 0
       },
       onProgress,
       signal
     ))
+    await applyGameDialogue(project, workDir, routing, options.gameContext ?? '', apiKey,
+      { from: 0.46, to: 0.58 }, onProgress, signal)
 
     const discovery = options.visualDiscovery ? await timed('source-discovery', () => discoverSourceMoments({
       videoPath: project.video.path, durationSec: project.video.durationSec, transcript,
@@ -184,7 +191,7 @@ export async function analyzeProject(
     // Save even an empty or incomplete scan: omissions must remain measurable.
     await updateProject(project.id, p => {
       if (p.video.path !== project.video.path || (p.sourceRevision ?? 0) !== (project.sourceRevision ?? 0)) {
-        throw new Error('The source changed during analysis. Generate clips again for the current video.')
+        throw new Error('Відео змінилося під час аналізу. Згенеруйте кліпи заново для поточного відео.')
       }
       p.visualDiscovery = options.visualDiscovery === true
       p.discoveryReport = discovery
@@ -262,7 +269,7 @@ export async function analyzeProject(
       // Rejected/missing reviews remain in the report, including runs with no recommendation.
       await updateProject(project.id, p => {
         if (p.video.path !== project.video.path || (p.sourceRevision ?? 0) !== (project.sourceRevision ?? 0)) {
-          throw new Error('The source changed during analysis. Generate clips again for the current video.')
+          throw new Error('Відео змінилося під час аналізу. Згенеруйте кліпи заново для поточного відео.')
         }
         p.rankingEnabled = true
         p.editorialRanking = ranked.report
@@ -279,7 +286,7 @@ export async function analyzeProject(
     project.videoType = options.videoType
     await updateProject(project.id, (p) => {
       if (p.video.path !== project.video.path || (p.sourceRevision ?? 0) !== (project.sourceRevision ?? 0)) {
-        throw new Error('The source changed during analysis. Generate clips again for the current video.')
+        throw new Error('Відео змінилося під час аналізу. Згенеруйте кліпи заново для поточного відео.')
       }
       p.clips = clips
       p.prompt = options.prompt

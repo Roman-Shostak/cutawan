@@ -7,6 +7,7 @@ import {
   Crop,
   ExternalLink,
   GalleryVerticalEnd,
+  Gamepad2,
   ImagePlus,
   Loader2,
   Quote,
@@ -30,6 +31,7 @@ import { trackClip } from '@shared/editHistory'
 import { EditorialExplanation, EditorialScore } from './EditorialSummary'
 import { editorialAssessmentCurrent } from '@shared/editorialRanking'
 import TranscriptEditor from './TranscriptEditor'
+import GameDialogueEditor from './GameDialogueEditor'
 import { ExportButton } from './ClipsScreen'
 import SizeTargetControls from './SizeTargetControls'
 import { CAPTION_STYLES, resolveCaptionStyle } from '@shared/captionStyles'
@@ -441,6 +443,12 @@ export default function EditorScreen(): React.JSX.Element {
             </div>
           )}
         </Section>
+
+        {(project.gameDialogue || (project.video.audioTracks?.length ?? 0) > 1) && (
+          <Section icon={Gamepad2} title="Діалоги гри">
+            <GameDialogueEditor project={project} clip={clip} onEdit={set} />
+          </Section>
+        )}
 
         {!wholeVideo && (
         <Section icon={ImagePlus} title="Вставки (B-roll)">

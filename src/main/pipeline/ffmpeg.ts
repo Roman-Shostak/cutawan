@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import ffmpegStatic from 'ffmpeg-static'
 import ffprobeStatic from '@ffprobe-installer/ffprobe'
-import type { VideoInfo } from '@shared/types'
+import type { AudioTrackInfo, VideoInfo } from '@shared/types'
 import { mediaJobs, mediaThreads } from './mediaJobs'
 
 /** When packaged inside app.asar, binaries live in the unpacked twin directory. */
@@ -143,8 +143,9 @@ interface ProbedStream {
   height?: number
   avg_frame_rate?: string
   duration?: string
-  tags?: { rotate?: string }
+  tags?: { rotate?: string; title?: string; handler_name?: string }
   side_data_list?: Array<{ rotation?: number }>
+  channels?: number
 }
 
 interface ProbedMedia {
@@ -177,6 +178,7 @@ export async function probeVideo(filePath: string): Promise<VideoInfo> {
   const video = data.streams?.find((s) => s.codec_type === 'video')
   if (!video) throw new Error('No video stream found in file')
   const hasAudio = data.streams?.some((s) => s.codec_type === 'audio') ?? false
+  const audioTracks = audioTracksOf(data)
   const fpsRaw = video.avg_frame_rate ?? '30/1'
   const [num, den] = fpsRaw.split('/').map(Number)
   const fps = den > 0 ? num / den : 30
@@ -196,8 +198,27 @@ export async function probeVideo(filePath: string): Promise<VideoInfo> {
     height,
     fps: Math.round(fps * 100) / 100,
     sizeBytes: Number(data.format?.size ?? 0),
-    hasAudio
+    hasAudio,
+    audioTracks
   }
+}
+
+/** Generic handler names muxers write when no track name was set. */
+const GENERIC_TRACK_TITLES = /^(soundhandler|sound media handler|core media audio|isomedia|gpac|stereo|mono|track ?\d*|audio ?\d*)$/i
+
+function audioTracksOf(data: ProbedMedia): AudioTrackInfo[] {
+  return (data.streams ?? [])
+    .filter((s) => s.codec_type === 'audio')
+    .map((s, index) => {
+      const raw = (s.tags?.title ?? s.tags?.handler_name ?? '').trim()
+      const title = raw && !GENERIC_TRACK_TITLES.test(raw) ? raw : undefined
+      return { index, ...(title ? { title } : {}), ...(s.channels ? { channels: s.channels } : {}) }
+    })
+}
+
+/** Audio tracks of a media file, for projects created before tracks were recorded. */
+export async function probeAudioTracks(filePath: string): Promise<AudioTrackInfo[]> {
+  return audioTracksOf(await probeMedia(filePath))
 }
 
 export interface AudioChunk {
@@ -232,7 +253,9 @@ export async function extractAudioChunks(
   durationSec: number,
   onProgress?: (fraction: number) => void,
   signal?: AbortSignal,
-  chunkSec = AUDIO_CHUNK_SEC
+  chunkSec = AUDIO_CHUNK_SEC,
+  /** Which audio stream to read (multi-track recordings); 0 is the first. */
+  audioTrack = 0
 ): Promise<AudioChunk[]> {
   await mkdir(workDir, { recursive: true })
   const stride = chunkSec - AUDIO_CHUNK_OVERLAP_SEC
@@ -241,11 +264,12 @@ export async function extractAudioChunks(
   const chunks: AudioChunk[] = []
   for (let i = 0; i < count; i++) {
     const offset = i * stride
-    const out = join(workDir, `audio-${i}.mp3`)
+    const out = join(workDir, audioTrack === 0 ? `audio-${i}.mp3` : `audio-track${audioTrack}-${i}.mp3`)
     const args = [
       '-ss', String(offset),
       '-t', String(chunkSec),
       '-i', videoPath,
+      '-map', `0:a:${audioTrack}`,
       '-vn',
       '-ac', '1',
       '-ar', '16000',

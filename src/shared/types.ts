@@ -12,6 +12,55 @@ export interface VideoInfo {
   fps: number
   sizeBytes: number
   hasAudio: boolean
+  /**
+   * Audio streams in file order (0 = first). OBS can record several tracks,
+   * e.g. 1 = stream mix, 2 = microphone, 3 = game. Absent on older projects
+   * until probed again.
+   */
+  audioTracks?: AudioTrackInfo[]
+}
+
+export interface AudioTrackInfo {
+  /** Position among the file's audio streams (ffmpeg `0:a:N`). */
+  index: number
+  /** Track name stored by the recorder (OBS writes the names set in its Audio settings). */
+  title?: string
+  channels?: number
+}
+
+/**
+ * Which recorded audio track carries what. `voiceTrack` feeds the creator's
+ * captions and clip finding; `gameTrack`, when set, is transcribed separately
+ * and translated into game-dialogue subtitles. Exports always keep the first
+ * track (the full mix) as the clip's sound.
+ */
+export interface AudioRouting {
+  voiceTrack: number
+  gameTrack: number | null
+}
+
+/** One line of in-game speech, transcribed from the game track and translated. */
+export interface GameDialogueLine {
+  id: string
+  /** Source seconds. */
+  start: number
+  end: number
+  /** What the game said, as transcribed. */
+  text: string
+  /** Translation shown in subtitles; the creator can edit it. */
+  translation: string
+  /** Language Whisper detected for this part of the game track. */
+  language?: string
+}
+
+export interface GameDialogue {
+  /** Audio track the dialogue was transcribed from. */
+  audioTrack: number
+  /** Language the translation is in (ISO-639-1). */
+  targetLanguage: string
+  /** Game title or notes the creator gave to keep names consistent. */
+  context: string
+  lines: GameDialogueLine[]
 }
 
 export interface TranscriptWord {
@@ -47,6 +96,8 @@ export interface Transcript {
    * clip boundaries cut only in silence when present; older projects lack it.
    */
   speech?: SpeechRegion[]
+  /** Audio track this transcript came from; absent means the first track. */
+  audioTrack?: number
 }
 
 export type AspectRatio = '9:16' | '1:1' | '16:9' | 'original'
@@ -136,6 +187,10 @@ export interface ClipEditState {
   /** Font family overriding the style's font (a custom uploaded font); null/absent = style default. */
   captionFontFamily?: string | null
   showTitle: boolean
+  /** Burn translated game-dialogue subtitles; absent means on when the project has them. */
+  gameSubtitles?: boolean
+  /** Game-dialogue lines the creator removed from this clip only. */
+  hiddenGameLines?: string[]
   /** Trim overrides (absolute seconds in the source video). */
   start: number
   end: number
@@ -268,6 +323,10 @@ export interface Project {
   editorialRanking?: EditorialRankingReport
   /** Flow that last ran on this project; absent on clip-finding projects. */
   mode?: ProjectMode
+  /** Track roles chosen at setup for multi-track recordings. */
+  audioRouting?: AudioRouting
+  /** Translated in-game speech from the game track, shared by every clip. */
+  gameDialogue?: GameDialogue | null
   /**
    * True when the source video no longer exists on disk (moved/deleted).
    * Transient — recomputed on load, never persisted.
@@ -320,6 +379,10 @@ export interface AnalyzeOptions {
   visualDiscovery?: boolean
   /** Explicit opt-in while provider behavior and quality are being evaluated. */
   editorialRanking?: boolean
+  /** Track roles for multi-track recordings (voice for captions, game for dialogue subtitles). */
+  audioRouting?: AudioRouting
+  /** Game title or notes that keep translated names consistent. */
+  gameContext?: string
 }
 
 export type ClipLengthPreference = 'auto' | 'short' | 'medium' | 'long'
@@ -339,6 +402,10 @@ export interface CaptionVideoOptions {
   followSpeaker: boolean
   /** Scene-aware punch-ins and slow creep, same plan the clip editor uses. */
   autoZoom: boolean
+  /** Track roles for multi-track recordings (voice for captions, game for dialogue subtitles). */
+  audioRouting?: AudioRouting
+  /** Game title or notes that keep translated names consistent. */
+  gameContext?: string
 }
 
 export interface ExportOptions {

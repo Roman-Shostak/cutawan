@@ -11,6 +11,7 @@ import {
 import { clipKeptSegments, TimeMap } from '@shared/tighten'
 import { automaticLayoutShots, clipAllowsAutoZoom, compositionHidesTitle, detailCaptionRanges, layoutBlocksAutoZoom } from '@shared/contentType'
 import { captionPositionAt } from '@shared/contentRegion'
+import { GAME_SUBTITLE_STYLE, HOOK_TITLE_SEC, visibleGameLines } from '@shared/gameDialogue'
 import { computeZoomEvents, fitZoomEvents } from '@shared/zoom'
 import { formatTimecode } from '../lib/format'
 import {
@@ -331,7 +332,13 @@ export default function PreviewPlayer({
             aspectRatio={aspectStyle}
           />
         )}
-        {clip.edit.showTitle && !compositionHidesTitle(clip) && (clip.hook || clip.title) && time - start < Math.min(4, duration) && (
+        <GameSubtitleOverlay
+          project={project}
+          clip={clip}
+          time={time}
+          titleShown={clip.edit.showTitle && !compositionHidesTitle(clip) && !!(clip.hook || clip.title)}
+        />
+        {clip.edit.showTitle && !compositionHidesTitle(clip) && (clip.hook || clip.title) && time - start < Math.min(HOOK_TITLE_SEC, duration) && (
           <HookOverlay clip={clip} />
         )}
         {!playing && (
@@ -441,6 +448,46 @@ function HookOverlay({ clip }: { clip: Clip }): React.JSX.Element {
       >
         {clip.hook || clip.title}
       </span>
+    </div>
+  )
+}
+
+/** Translated game dialogue, drawn the way the export burns it (see buildAss). */
+function GameSubtitleOverlay({ project, clip, time, titleShown }: {
+  project: Project
+  clip: Clip
+  time: number
+  titleShown: boolean
+}): React.JSX.Element | null {
+  const lines = useMemo(
+    () => visibleGameLines(clip, project.gameDialogue),
+    [clip, project.gameDialogue]
+  )
+  const line = lines.find((l) => time >= l.start && time < l.end)
+  if (!line) return null
+  const game = GAME_SUBTITLE_STYLE
+  const top = titleShown && line.start - clip.edit.start < HOOK_TITLE_SEC ? game.belowTitleY : game.positionY
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 flex justify-center"
+      style={{ top: `${top * 100}cqh` }}
+    >
+      <div className="text-center" style={{ maxWidth: `${game.maxWidth * 100}cqw` }}>
+      <span
+        style={{
+          fontFamily: `'${game.fontFamily}', sans-serif`,
+          fontSize: `${game.fontScale * 100}cqh`,
+          lineHeight: 1.25,
+          color: game.textColor,
+          padding: '0.5cqh 1cqh',
+          backgroundColor: hexToRgba(game.boxColor, game.boxOpacity),
+          boxDecorationBreak: 'clone',
+          WebkitBoxDecorationBreak: 'clone'
+        }}
+      >
+        {line.text}
+      </span>
+      </div>
     </div>
   )
 }

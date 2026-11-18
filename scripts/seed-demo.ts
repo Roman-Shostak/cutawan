@@ -97,7 +97,11 @@ async function main(): Promise<void> {
   await runFfmpeg([
     '-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=30:duration=70',
     '-f', 'lavfi', '-i', 'sine=frequency=330:duration=70',
-    '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac',
+    '-f', 'lavfi', '-i', 'sine=frequency=520:duration=70',
+    // Three tracks like an OBS game recording: mix, mic, game.
+    '-map', '0:v', '-map', '1:a', '-map', '1:a', '-map', '2:a',
+    '-metadata:s:a:1', 'title=Mic', '-metadata:s:a:2', 'title=Game',
+    '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-t', '70',
     videoPath
   ])
   const video = await probeVideo(videoPath)
@@ -176,8 +180,21 @@ async function main(): Promise<void> {
     transcript: makeTranscript(video.durationSec),
     clips,
     prompt: '',
-    videoType: 'podcast'
+    videoType: 'podcast',
+    // The transcript came from the mix; the game track carries translated dialogue.
+    audioRouting: { voiceTrack: 0, gameTrack: 2 },
+    gameDialogue: {
+      audioTrack: 2,
+      targetLanguage: 'uk',
+      context: '',
+      lines: [
+        { id: 'demo-g0', start: DEMO_CLIPS[0].start + 1, end: DEMO_CLIPS[0].start + 3.5, text: 'Joel, get down! They are right behind us!', translation: 'Джоеле, лягай! Вони прямо за нами!', language: 'english' },
+        { id: 'demo-g1', start: DEMO_CLIPS[0].start + 6, end: DEMO_CLIPS[0].start + 8, text: 'Где патроны? У меня пусто.', translation: 'Де набої? У мене порожньо.', language: 'russian' },
+        { id: 'demo-g2', start: DEMO_CLIPS[0].start + 10, end: DEMO_CLIPS[0].start + 11.5, text: 'Shh. Stay quiet.', translation: 'Тихо. Не шуми.', language: 'english' }
+      ]
+    }
   }
+  clips[0].edit.hiddenGameLines = ['demo-g2']
   // Scripted UI states, explicitly labelled fixtures rather than model evidence.
   clips[0].editorial = { ...needsEditorialReview(clips[0], project.transcript!, 'Demo fixture: a complete thought with a clear landing.'),
     status: 'reviewed', story: 'complete', fidelity: 'supported', score: 75,

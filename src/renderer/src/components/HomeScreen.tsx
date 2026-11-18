@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Upload,
   Captions,
@@ -19,12 +19,14 @@ import {
 import { useStore } from '../store'
 import { formatDuration, formatBytes, pluralUk } from '../lib/format'
 import MissingSourceBanner from './MissingSourceBanner'
+import AudioTracksPanel, { defaultAudioRouting } from './AudioTracksPanel'
 import DiscoverySummary from './DiscoverySummary'
 import { EditorialRankingSummary } from './EditorialSummary'
 import { SOURCE_DISCOVERY_BUDGET } from '@shared/sourceAnalysis'
 import { EDITORIAL_BUDGET, editorialReportMatchesClips } from '@shared/editorialRanking'
 import type {
   AspectRatio,
+  AudioRouting,
   BrowserCookieSource,
   ClipLengthPreference,
   ProjectMode,
@@ -298,6 +300,12 @@ function SetupPanel(): React.JSX.Element {
   const [hookFirst, setHookFirst] = useState(false)
   const [visualDiscovery, setVisualDiscovery] = useState(project.visualDiscovery ?? false)
   const [editorialRanking, setEditorialRanking] = useState(project.rankingEnabled ?? false)
+  const probeAudioTracks = useStore((s) => s.probeAudioTracks)
+  useEffect(() => { void probeAudioTracks() }, [project.id, probeAudioTracks])
+  const [routingChoice, setRouting] = useState<AudioRouting | null>(null)
+  const routing = routingChoice ?? defaultAudioRouting(project)
+  const [gameContext, setGameContext] = useState(project.gameDialogue?.context ?? '')
+  const audioOptions = routing ? { audioRouting: routing, gameContext } : {}
 
   // Captioning an already-transcribed video makes no API calls, so it does not
   // need a key; clip finding always does.
@@ -357,7 +365,7 @@ function SetupPanel(): React.JSX.Element {
             onClick={() => {
               if (
                 window.confirm(
-                  `Delete "${project.name}"? This permanently removes the project and its ${project.clips.length} clip${project.clips.length === 1 ? '' : 's'}, and can't be undone.\n\nTo work on a different video without losing this one, use "New video" instead.`
+                  `Видалити «${project.name}»? Проєкт і всі його кліпи (${project.clips.length}) буде видалено назавжди, без можливості відновити.\n\nЩоб працювати з іншим відео, не втрачаючи це, натисніть «Нове відео».`
                 )
               ) {
                 void goHomeClear(project.id)
@@ -371,6 +379,16 @@ function SetupPanel(): React.JSX.Element {
 
         <div className="col-span-3 flex flex-col gap-5">
           <ModeSwitcher mode={mode} onChange={setMode} />
+
+          {routing && (
+            <AudioTracksPanel
+              project={project}
+              routing={routing}
+              onRoutingChange={setRouting}
+              gameContext={gameContext}
+              onGameContextChange={setGameContext}
+            />
+          )}
 
           {mode === 'clips' ? (
             <>
@@ -545,11 +563,12 @@ function SetupPanel(): React.JSX.Element {
                 data-testid="start-button"
                 onClick={() =>
                   mode === 'clips'
-                    ? void analyze({ prompt, clipLength, broll, hookFirst, videoType, visualDiscovery, editorialRanking })
+                    ? void analyze({ prompt, clipLength, broll, hookFirst, videoType, visualDiscovery, editorialRanking, ...audioOptions })
                     : void captionWholeVideo({
                         aspect: captionAspect,
                         followSpeaker,
-                        autoZoom: captionZoom
+                        autoZoom: captionZoom,
+                        ...audioOptions
                       })
                 }
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-5 py-3.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-black/40 transition hover:bg-white"

@@ -63,6 +63,12 @@ const api = {
     text: string
   ): Promise<Project> =>
     ipcRenderer.invoke('project:updateTranscriptWord', projectId, segmentId, wordIndex, text),
+  /** Probe a project's audio tracks (older projects saved before tracks were recorded). */
+  probeAudioTracks: (projectId: string): Promise<Project> =>
+    ipcRenderer.invoke('project:probeAudioTracks', projectId),
+  /** Edit the subtitle text of one game-dialogue line (shared by every clip). */
+  updateGameLine: (projectId: string, lineId: string, translation: string): Promise<Project> =>
+    ipcRenderer.invoke('project:updateGameLine', projectId, lineId, translation),
 
   exportClip: (projectId: string, opts: ExportOptions): Promise<ExportResult> =>
     ipcRenderer.invoke('clip:export', projectId, opts),

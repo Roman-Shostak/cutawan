@@ -15,6 +15,7 @@ import { findWholeVideoClip, wholeVideoEdit } from '@shared/wholeVideo'
 import { extractThumbnail } from './ffmpeg'
 import { analyzeClipFocus } from './faces'
 import { ensureTranscript } from './projectTranscript'
+import { applyGameDialogue } from './gameDialogue'
 import { getAnalysisCredential, getModelPreferences } from '../settings'
 import { usesLocalTranscription } from '../subscription'
 import { projectDir, updateProject } from '../projects'
@@ -61,13 +62,16 @@ export async function captionWholeVideo(
         apiKey: apiKey ?? '',
         model: settings.transcriptionModel,
         language: settings.transcriptionLanguage,
-        span: { from: 0.02, to: 0.7 },
+        span: { from: 0.02, to: options.audioRouting?.gameTrack != null ? 0.58 : 0.7 },
         noSpeechError:
-          'No speech was detected in this video, so there is nothing to caption.'
+          'У цьому відео не знайдено мови, тож субтитрувати нічого.',
+        audioTrack: options.audioRouting?.voiceTrack ?? 0
       },
       onProgress,
       signal
     )
+    await applyGameDialogue(project, workDir, options.audioRouting, options.gameContext ?? '', apiKey,
+      { from: 0.58, to: 0.7 }, onProgress, signal)
 
     let focusTrack: FocusKeyframe[] | null = null
     // Without tracking the crop is a fixed window the focus slider moves, and
@@ -83,8 +87,8 @@ export async function captionWholeVideo(
             progress: 0.7 + (done / total) * 0.22,
             message:
               total > 1
-                ? `Following the speaker (part ${done}/${total})…`
-                : 'Following the speaker…'
+                ? `Стежу за мовцем (частина ${done}/${total})…`
+                : 'Стежу за мовцем…'
           }),
         signal
       )

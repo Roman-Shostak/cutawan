@@ -16,10 +16,11 @@ import type {
 import { VIDEO_EXTENSIONS } from '@shared/video'
 import { sizeTargetBytesFromMb } from '@shared/uploadBudget'
 import { mergeClipSave, needsReframe } from '@shared/reframe'
+import { visibleGameLines } from '@shared/gameDialogue'
 import { analyzeProject, createProject, createProjectFromUrl } from './pipeline'
 import { captionWholeVideo } from './pipeline/wholeVideo'
 import { downloadGpuFfmpeg } from './pipeline/encoders'
-import { probeVideo } from './pipeline/ffmpeg'
+import { probeAudioTracks, probeVideo } from './pipeline/ffmpeg'
 import { getTimeline } from './pipeline/timeline'
 import { renderClip } from './pipeline/render'
 import { ensureClipReframe } from './pipeline/reframe'
@@ -225,6 +226,21 @@ export function registerIpcHandlers(): void {
     }
   )
 
+  handle('project:probeAudioTracks', async (_e, projectId: string) => {
+    const project = await loadProject(projectId)
+    if (project.video.audioTracks) return project
+    const audioTracks = await probeAudioTracks(project.video.path)
+    return updateProject(projectId, (p) => { p.video.audioTracks = audioTracks })
+  })
+
+  handle('project:updateGameLine', async (_e, projectId: string, lineId: string, translation: string) => {
+    return updateProject(projectId, (project) => {
+      const line = project.gameDialogue?.lines.find((l) => l.id === lineId)
+      if (!line) throw new Error('Game dialogue line not found')
+      line.translation = translation.trim()
+    })
+  })
+
   handle('project:relinkVideo', async (event, projectId: string) => {
     const project = await loadProject(projectId)
     const picked = await pickVideoFile(event.sender, `Знайдіть «${project.video.fileName}»`)
@@ -286,6 +302,7 @@ export function registerIpcHandlers(): void {
         clip,
         source: project.video,
         transcript: project.transcript,
+        gameLines: visibleGameLines(clip, project.gameDialogue),
         outputPath,
         encoder: prefs.encoder,
         quality: prefs.quality,

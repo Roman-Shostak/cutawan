@@ -3,6 +3,7 @@ import { app } from 'electron'
 import type { Transcript, BrandColors } from '@shared/types'
 import { resolveCaptionStyle, type CaptionStyle } from '@shared/captionStyles'
 import { captionPositionAt, type CaptionPositionRange } from '@shared/contentRegion'
+import { GAME_SUBTITLE_STYLE, HOOK_TITLE_SEC } from '@shared/gameDialogue'
 import type { FontMetrics } from '../fonts'
 import {
   CAPTION_SAFE_WIDTH,
@@ -152,6 +153,12 @@ export interface CaptionOptions {
   brandColors?: BrandColors | null
   /** Source-time layout bands that keep captions clear of enlarged detail. */
   positionRanges?: CaptionPositionRange[]
+  /** False leaves out the spoken-word captions (game subtitles may still burn). */
+  voiceCaptions?: boolean
+  /** Translated game-dialogue lines, in the same time base as clipStart/clipEnd. */
+  gameLines?: Array<{ start: number; end: number; text: string }>
+  /** Metrics of the game-subtitle font, for the em-size conversion. */
+  gameFontMetrics?: FontMetrics | null
 }
 
 export function buildAss(transcript: Transcript, opts: CaptionOptions): string {
@@ -186,6 +193,14 @@ export function buildAss(transcript: Transcript, opts: CaptionOptions): string {
   const titleBoxPad = Math.max(6, Math.round(opts.height * 0.009))
   const titleShadow = Math.max(2, Math.round(opts.height * 0.0032))
 
+  // Game dialogue: smaller film-style subtitles in a translucent box near the
+  // top, clear of the creator's captions; smart-wrapped inside the margins.
+  const game = GAME_SUBTITLE_STYLE
+  const gameFontSize = assFontSize(opts.height * game.fontScale, opts.gameFontMetrics ?? null)
+  const gameMarginH = Math.round(opts.width * (1 - game.maxWidth) / 2)
+  const gameBox = `&H${Math.round((1 - game.boxOpacity) * 255).toString(16).padStart(2, '0').toUpperCase()}000000`
+  const gameBoxPad = Math.max(4, Math.round(opts.height * 0.006))
+
   const header = `[Script Info]
 Title: Cutawan captions
 ScriptType: v4.00+
@@ -198,6 +213,7 @@ ScaledBorderAndShadow: yes
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Caption,${style.fontFamily},${fontSize},${primary},${primary},${outline},&H80000000,${style.bold ? -1 : 0},0,0,0,100,100,0,0,1,${style.outlineWidth},${style.shadow},5,${marginH},${marginH},0,1
 Style: Title,${style.fontFamily},${titleFontSize},${hookText},${hookText},${titleBox},${titleShadowColor},-1,0,0,0,100,100,0,0,3,${titleBoxPad},${titleShadow},8,${titleMarginH},${titleMarginH},${titleMarginV},1
+Style: Game,${game.fontFamily},${gameFontSize},&H00FFFFFF,&H00FFFFFF,${gameBox},&H00000000,0,0,0,0,100,100,0,0,3,${gameBoxPad},0,8,${gameMarginH},${gameMarginH},${Math.round(opts.height * game.positionY)},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -207,13 +223,23 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   const clipDur = opts.clipEnd - opts.clipStart
 
   if (opts.title && opts.title.trim().length > 0) {
-    const showFor = Math.min(4, clipDur)
+    const showFor = Math.min(HOOK_TITLE_SEC, clipDur)
     lines.push(
       `Dialogue: 1,${assTime(0)},${assTime(showFor)},Title,,0,0,0,,{\\fad(200,300)}${escapeAss(opts.title.trim())}`
     )
   }
 
-  const words = wordsInRange(transcript, opts.clipStart, opts.clipEnd)
+  const titleShown = opts.title && opts.title.trim().length > 0 ? Math.min(HOOK_TITLE_SEC, clipDur) : 0
+  for (const line of opts.gameLines ?? []) {
+    const start = Math.max(0, line.start - opts.clipStart)
+    const end = Math.min(clipDur, line.end - opts.clipStart)
+    if (end - start < 0.05) continue
+    // While the hook title holds the top of the frame, drop below it.
+    const top = start < titleShown ? game.belowTitleY : game.positionY
+    lines.push(`Dialogue: 2,${assTime(start)},${assTime(end)},Game,,0,0,${Math.round(opts.height * top)},,{\\fad(80,120)}${escapeAss(line.text)}`)
+  }
+
+  const words = opts.voiceCaptions === false ? [] : wordsInRange(transcript, opts.clipStart, opts.clipEnd)
   const groups = groupWords(words, captionLayoutBudget(style, opts.width / opts.height))
   // \q2 turns libass wrapping off for caption events only: the layout above
   // decided their lines. The hook title keeps the script's smart wrapping

@@ -31,6 +31,8 @@ export interface EnsureTranscriptOptions {
   noSpeechError: string
   /** Visual discovery can proceed on an explicitly empty transcript. */
   allowNoSpeech?: boolean
+  /** Audio track carrying the creator's voice (multi-track recordings); 0 = first. */
+  audioTrack?: number
 }
 
 export async function ensureTranscript(
@@ -43,13 +45,18 @@ export async function ensureTranscript(
   const { from, to } = options.span
   const at = (fraction: number): number => from + (to - from) * fraction
 
+  const audioTrack = options.audioTrack ?? 0
+  // A transcript of a different track (e.g. the full mix before the creator
+  // picked the microphone track) would caption the game too: redo it.
+  if (project.transcript && (project.transcript.audioTrack ?? 0) !== audioTrack) project.transcript = null
+
   if (project.transcript) {
     if (!project.transcript.segments.length && !options.allowNoSpeech) throw new Error(options.noSpeechError)
     onProgress({ stage: 'transcribe', progress: at(1), message: 'Використовую збережену розшифровку…' })
     if (!project.transcript.speech && project.video.hasAudio) {
       // Older projects: add voice activity once so cuts land in silence.
       onProgress({ stage: 'transcribe', progress: at(1), message: 'Шукаю мову в аудіо…' })
-      const speech = await speechFor(project.video.path, signal)
+      const speech = await speechFor(project.video.path, signal, audioTrack)
       if (speech) {
         project.transcript = { ...project.transcript, speech }
         await updateProject(project.id, (p) => { if (p.transcript) p.transcript.speech = speech })
@@ -73,7 +80,7 @@ export async function ensureTranscript(
 
   // Voice activity is local and independent of the transcription route, so
   // it runs alongside it rather than adding to the wait.
-  const speech = speechFor(project.video.path, signal)
+  const speech = speechFor(project.video.path, signal, audioTrack)
   speech.catch(() => undefined) // awaited below; only cancellation rejects
   onProgress({ stage: 'audio', progress: at(0), message: 'Витягую аудіо…' })
   const chunks = await extractAudioChunks(
@@ -83,7 +90,8 @@ export async function ensureTranscript(
     (f) =>
       onProgress({ stage: 'audio', progress: at(f * AUDIO_SHARE), message: 'Витягую аудіо…' }),
     signal,
-    transcriptionChunkSec(AUDIO_CHUNK_SEC)
+    transcriptionChunkSec(AUDIO_CHUNK_SEC),
+    audioTrack
   )
 
   onProgress({
@@ -109,6 +117,7 @@ export async function ensureTranscript(
   )
   if (transcript.segments.length === 0 && !options.allowNoSpeech) throw new Error(options.noSpeechError)
   transcript.speech = (await speech) ?? undefined
+  if (audioTrack !== 0) transcript.audioTrack = audioTrack
 
   // Vocal energy feeds the virality analysis (arousal signal) and the auto
   // zoom's emphasis punch-ins, so both flows want it annotated.
@@ -129,10 +138,10 @@ export async function ensureTranscript(
 }
 
 /** Voice activity for the source, or null when unavailable; never fails the stage. */
-async function speechFor(videoPath: string, signal?: AbortSignal): Promise<Transcript['speech'] | null> {
+export async function speechFor(videoPath: string, signal?: AbortSignal, audioTrack = 0): Promise<Transcript['speech'] | null> {
   if (!vadAvailable()) return null
   try {
-    return await timed('speech', () => detectSpeech(videoPath, signal))
+    return await timed('speech', () => detectSpeech(videoPath, signal, audioTrack))
   } catch (error) {
     if (signal?.aborted) throw error
     console.error('Speech detection failed; cuts will use word timing only:', error)

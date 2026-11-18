@@ -67,11 +67,11 @@ export function speechRegions(probs: ArrayLike<number>, chunkSec = CHUNK_SEC, du
   return out.map(r => ({ start: Math.round(r.start * 1000) / 1000, end: Math.round(r.end * 1000) / 1000 }))
 }
 
-/** Speech regions for a whole video's first audio track, in source seconds. */
-export async function detectSpeech(videoPath: string, signal?: AbortSignal): Promise<SpeechRegion[]> {
+/** Speech regions for one audio track of a video (the first by default), in source seconds. */
+export async function detectSpeech(videoPath: string, signal?: AbortSignal, audioTrack = 0): Promise<SpeechRegion[]> {
   const pcmPath = join(tmpdir(), 'cutawan', `vad-${randomUUID()}.pcm`)
   try {
-    await timed('vad/audio', () => runFfmpeg(['-i', videoPath, '-map', '0:a:0', '-vn', '-ac', '1',
+    await timed('vad/audio', () => runFfmpeg(['-i', videoPath, '-map', `0:a:${audioTrack}`, '-vn', '-ac', '1',
       '-ar', String(SAMPLE_RATE), '-f', 's16le', pcmPath], { signal }))
     const samples = Math.floor((await stat(pcmPath)).size / 2)
     const probs = new Float32Array(Math.floor(samples / CHUNK))

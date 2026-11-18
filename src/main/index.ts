@@ -128,6 +128,13 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
   await click('[data-testid="clip-thumb"]')
   await sleep(800)
   await shot('editor')
+  // Game dialogue: the seeded clip has three lines, one hidden by hand.
+  await win.webContents.executeJavaScript(`document.querySelector('[data-testid="game-dialogue-editor"]')?.scrollIntoView({ block: 'center' })`)
+  await sleep(500)
+  if (!(await win.webContents.executeJavaScript(`document.body.innerText.includes('Показано 2 з 3')`))) {
+    throw new Error('Smoke capture: the editor does not list the clip\'s game dialogue')
+  }
+  await shot('editor-game-dialogue')
   // Timeline editing with real key events: two razor splits, select the
   // middle piece, ripple-delete it, then undo.
   const key = async (keyCode: string, modifiers: Array<'meta' | 'control'> = []): Promise<void> => {
@@ -164,6 +171,12 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
   await click('[data-testid="back-button"]')
   await click('[data-testid="regenerate-button"]')
   await shot('setup-clips')
+  await win.webContents.executeJavaScript(`document.querySelector('[data-testid="audio-tracks-panel"]')?.scrollIntoView({ block: 'center' })`)
+  await sleep(400)
+  if ((await win.webContents.executeJavaScript(`document.querySelector('[data-testid="game-track-select"]')?.value ?? null`)) !== '2') {
+    throw new Error('Smoke capture: the setup screen does not offer the saved game track')
+  }
+  await shot('setup-audio-tracks')
   if (await win.webContents.executeJavaScript(`document.querySelector('[data-testid="editorial-ranking-toggle"]').checked`)) {
     throw new Error('Smoke capture: editorial ranking must be opt-in on a new project')
   }

@@ -151,6 +151,10 @@ interface AppState {
   /** Clips whose layout is being analysed in the background after the pipeline. */
   backgroundReframing: Record<string, boolean>
   updateTranscriptWord: (segmentId: number, wordIndex: number, text: string) => Promise<void>
+  /** Change the subtitle text of one game-dialogue line. */
+  updateGameLine: (lineId: string, translation: string) => Promise<void>
+  /** Fill in the audio-track list for projects created before it was recorded. */
+  probeAudioTracks: () => Promise<void>
   exportClip: (clipId: string) => Promise<void>
   cancelExport: (clipId: string) => Promise<void>
   exportAll: () => Promise<void>
@@ -514,6 +518,26 @@ export const useStore = create<AppState>((set, get) => ({
     const current = get().project
     if (current?.id === updated.id) {
       set({ project: { ...current, transcript: updated.transcript } })
+    }
+  },
+
+  updateGameLine: async (lineId, translation) => {
+    const project = get().project
+    if (!project) return
+    const updated = await window.cutawan.updateGameLine(project.id, lineId, translation)
+    const current = get().project
+    if (current?.id === updated.id) {
+      set({ project: { ...current, gameDialogue: updated.gameDialogue } })
+    }
+  },
+
+  probeAudioTracks: async () => {
+    const project = get().project
+    if (!project || project.video.audioTracks) return
+    const updated = await window.cutawan.probeAudioTracks(project.id).catch(() => null)
+    const current = get().project
+    if (updated && current?.id === updated.id) {
+      set({ project: { ...current, video: { ...current.video, audioTracks: updated.video.audioTracks } } })
     }
   },
 
