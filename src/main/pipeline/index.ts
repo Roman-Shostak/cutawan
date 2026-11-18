@@ -80,7 +80,9 @@ export async function createProjectFromUrl(
   ).catch(rethrowWithLoginHint(prefs.importCookiesBrowser, Boolean(prefs.importCookiesPath)))
 
   onProgress({ progress: 0.97, message: 'Читаю відео…' })
-  const video = await probeVideo(videoPath)
+  // Chapters in a downloaded VOD are the site's (game changes, sponsor
+  // segments), not the creator's hotkey markers.
+  const video = { ...await probeVideo(videoPath), markers: [] }
   const now = Date.now()
   const project: Project = {
     id,
