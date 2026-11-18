@@ -5,7 +5,7 @@ import { makeTranscript } from './helpers'
 
 const mocks = vi.hoisted(() => ({ highlights: vi.fn(), transcript: vi.fn(), assess: vi.fn(), complete: vi.fn(),
   faces: vi.fn(), composition: vi.fn(), save: vi.fn(), projectDir: vi.fn(), discovery: vi.fn(), rank: vi.fn() }))
-vi.mock('../src/main/settings', () => ({ getAnalysisCredential: () => 'key', getModelPreferences: () => ({ analysisModel: 'test' }), getImportPreferences: vi.fn(), getTranscriptionVocabulary: () => '', saveStreamTemplate: vi.fn() }))
+vi.mock('../src/main/settings', () => ({ getAnalysisCredential: () => 'key', getModelPreferences: () => ({ analysisModel: 'test' }), getImportPreferences: vi.fn(), getTranscriptionVocabulary: () => '', saveStreamTemplate: vi.fn(), getCaptionLanguage: () => 'original', saveLastAnalyze: vi.fn() }))
 vi.mock('../src/main/projects', () => ({ projectDir: mocks.projectDir, saveProject: vi.fn(), updateProject: mocks.save }))
 vi.mock('../src/main/pipeline/projectTranscript', () => ({ ensureTranscript: mocks.transcript }))
 vi.mock('../src/main/pipeline/highlights', async importOriginal => ({

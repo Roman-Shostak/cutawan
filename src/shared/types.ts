@@ -100,7 +100,15 @@ export interface TranscriptSegment {
   words: TranscriptWord[]
   /** Relative vocal energy 0..1 (percentile within this video); optional. */
   energy?: number
+  /** What Whisper heard, kept when the captions show a translation of it. */
+  original?: { text: string; words: TranscriptWord[] }
 }
+
+/**
+ * Caption language: as spoken ("original"), or everything in Ukrainian
+ * (lines in other languages translated).
+ */
+export type CaptionLanguage = 'original' | 'uk'
 
 /** A span of source time, in seconds. */
 export interface TimeRange { start: number; end: number }
@@ -119,6 +127,10 @@ export interface Transcript {
   speech?: SpeechRegion[]
   /** Audio track this transcript came from; absent means the first track. */
   audioTrack?: number
+  /** Which caption language the segments currently hold; absent means as recognised. */
+  captionLanguage?: CaptionLanguage
+  /** Language Whisper was told to expect ('auto' = detected); absent on older projects. */
+  whisperLanguage?: string
 }
 
 export type AspectRatio = '9:16' | '1:1' | '16:9' | 'original'
@@ -147,6 +159,15 @@ export type ProjectMode = 'clips' | 'whole-video'
  * highlight defaults, face tracking and 9:16 layout (crop vs letterbox).
  */
 export type VideoType = 'auto' | 'talking-head' | 'podcast' | 'webinar' | 'product-demo' | 'gaming-stream'
+
+/** Setup choices remembered between videos. */
+export interface LastAnalyzeChoices {
+  videoType: VideoType
+  clipLength: ClipLengthPreference
+  hookFirst: boolean
+  visualDiscovery: boolean
+  editorialRanking: boolean
+}
 
 /** How much of the game a stream layout shows under the webcam. */
 export type StreamGameZoom = 'fill' | 'wide' | 'full'
@@ -368,6 +389,8 @@ export interface Project {
   audioRouting?: AudioRouting
   /** Translated in-game speech from the game track, shared by every clip. */
   gameDialogue?: GameDialogue | null
+  /** Where the webcam was found in this recording (automatic, once per video). */
+  webcamDetection?: { webcam: ContentRegion | null; detectedAt: string }
   /**
    * True when the source video no longer exists on disk (moved/deleted).
    * Transient — recomputed on load, never persisted.
@@ -426,6 +449,8 @@ export interface AnalyzeOptions {
   gameContext?: string
   /** Layout for `gaming-stream` clips; saved as the default for the next video. */
   streamTemplate?: StreamTemplate
+  /** Throw away the saved transcript and recognise the speech again. */
+  retranscribe?: boolean
 }
 
 export type ClipLengthPreference = 'auto' | 'short' | 'medium' | 'long'
@@ -449,6 +474,8 @@ export interface CaptionVideoOptions {
   audioRouting?: AudioRouting
   /** Game title or notes that keep translated names consistent. */
   gameContext?: string
+  /** Throw away the saved transcript and recognise the speech again. */
+  retranscribe?: boolean
 }
 
 export interface ExportOptions {
@@ -675,6 +702,10 @@ export interface AppSettings {
   hasImportCookiesFile: boolean
   /** Names and slang passed to Whisper as spelling hints. */
   transcriptionVocabulary: string
+  /** Captions as spoken, or everything in Ukrainian. */
+  captionLanguage: CaptionLanguage
+  /** Choices from the last "Get clips" run, so the next video starts from them. */
+  lastAnalyze: LastAnalyzeChoices | null
   /** The last stream layout used; the next gaming video starts from it. */
   streamTemplate: StreamTemplate | null
 }
@@ -702,6 +733,8 @@ export interface SettingsUpdate {
   clearImportCookiesFile?: boolean
   /** Names and slang Whisper should spell right (nicknames, games, friends). */
   transcriptionVocabulary?: string
+  captionLanguage?: CaptionLanguage
+  lastAnalyze?: LastAnalyzeChoices
   streamTemplate?: StreamTemplate | null
 }
 

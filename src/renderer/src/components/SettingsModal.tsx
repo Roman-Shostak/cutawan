@@ -55,26 +55,6 @@ const ENDPOINT_PRESETS: Array<{ id: string; label: string; baseUrl: string; mode
   { id: 'anthropic', label: 'Anthropic (Claude)', baseUrl: ANTHROPIC_BASE_URL, model: 'claude-haiku-5-5' }
 ]
 
-/** Whisper transcription languages. 'auto' lets Whisper detect per video. */
-const TRANSCRIPTION_LANGUAGES: Array<{ value: string; label: string }> = [
-  { value: 'uk', label: 'Українська' },
-  { value: 'en', label: 'Англійська' },
-  { value: 'auto', label: 'Автовизначення' },
-  { value: 'cy', label: 'Валлійська' },
-  { value: 'es', label: 'Іспанська' },
-  { value: 'fr', label: 'Французька' },
-  { value: 'de', label: 'Німецька' },
-  { value: 'it', label: 'Італійська' },
-  { value: 'pt', label: 'Португальська' },
-  { value: 'nl', label: 'Нідерландська' },
-  { value: 'pl', label: 'Польська' },
-  { value: 'ru', label: 'Російська' },
-  { value: 'ja', label: 'Японська' },
-  { value: 'zh', label: 'Китайська' },
-  { value: 'ko', label: 'Корейська' },
-  { value: 'hi', label: 'Гінді' },
-  { value: 'ar', label: 'Арабська' }
-]
 
 const ENCODERS: Array<{ value: EncoderPreference; label: string; hint: string }> = [
   { value: 'auto', label: 'Авто', hint: 'GPU, коли доступний' },
@@ -349,22 +329,25 @@ export default function SettingsModal(): React.JSX.Element {
         <div className="mt-5">
           <label className="flex items-center gap-2 text-sm font-medium">
             <Languages size={15} className="text-accent-400" />
-            Мова розпізнавання
+            Мова субтитрів
           </label>
           <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            Мова, яку розпізнає Whisper. Вибирайте мову, якою говорите, а не автовизначення — воно іноді помиляється (наприклад, приймає англійську за валлійську).
+            Whisper сам визначає мову кожного фрагмента. Далі — або залишити як говорять, або перекласти все українською (переклад робить Claude, лише для фраз іншою мовою).
           </p>
-          <select
-            value={settings?.transcriptionLanguage ?? 'uk'}
-            onChange={(e) => void saveSettings({ transcriptionLanguage: e.target.value })}
-            className="mt-2.5 w-full rounded-xl border border-surface-600 bg-surface-850 px-3.5 py-2.5 text-sm text-zinc-200 focus:border-white/25 focus:outline-none"
-          >
-            {TRANSCRIPTION_LANGUAGES.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
-              </option>
+          <div className="mt-2.5 grid grid-cols-2 gap-2">
+            {([['uk', 'Українською'], ['original', 'Як говорять']] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => void saveSettings({ captionLanguage: value })}
+                className={`rounded-xl border px-3 py-2 text-sm transition ${
+                  (settings?.captionLanguage ?? 'uk') === value ? 'border-white/30 bg-white/[0.07] text-zinc-100' : 'border-surface-600 text-zinc-400 hover:bg-surface-800'
+                }`}
+              >
+                {label}
+              </button>
             ))}
-          </select>
+          </div>
               </div>
 
               <div className="mt-5">

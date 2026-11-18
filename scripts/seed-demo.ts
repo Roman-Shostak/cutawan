@@ -46,7 +46,7 @@ function makeTranscript(durationSec: number): Transcript {
       energy: segments.length % 2 === 1 ? 0.9 : 0.4
     })
   }
-  return { language: 'english', durationSec, segments }
+  return { language: 'english', durationSec, segments, whisperLanguage: 'auto' }
 }
 
 const DEMO_CLIPS: Array<Pick<Clip, 'title' | 'hook' | 'summary' | 'viralityScore' | 'viralityReason' | 'hashtags'> & { start: number; end: number }> = [

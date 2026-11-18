@@ -154,6 +154,10 @@ interface AppState {
   updateTranscriptWord: (segmentId: number, wordIndex: number, text: string) => Promise<void>
   /** Change the text or the speaker (game / friend) of one game-dialogue line. */
   updateGameLine: (lineId: string, patch: GameLinePatch) => Promise<void>
+  /** Locate the webcam in the current project's recording, once. */
+  detectWebcam: () => Promise<void>
+  /** Project id whose webcam is being looked for right now. */
+  detectingWebcam: string | null
   /** Fill in the audio-track list for projects created before it was recorded. */
   probeAudioTracks: () => Promise<void>
   exportClip: (clipId: string) => Promise<void>
@@ -530,6 +534,18 @@ export const useStore = create<AppState>((set, get) => ({
     if (current?.id === updated.id) {
       set({ project: { ...current, gameDialogue: updated.gameDialogue } })
     }
+  },
+
+  detectingWebcam: null,
+
+  detectWebcam: async () => {
+    const project = get().project
+    if (!project || project.webcamDetection || get().detectingWebcam === project.id) return
+    set({ detectingWebcam: project.id })
+    const updated = await window.cutawan.detectWebcam(project.id).catch(() => null)
+    set({ detectingWebcam: null })
+    const current = get().project
+    if (updated?.webcamDetection && current?.id === updated.id) set({ project: { ...current, webcamDetection: updated.webcamDetection } })
   },
 
   probeAudioTracks: async () => {

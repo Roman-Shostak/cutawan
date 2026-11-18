@@ -178,6 +178,7 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
   }
   await shot('setup-audio-tracks')
   // "My stream" template: outline the webcam on the frame, see the 9:16 result.
+  await win.webContents.executeJavaScript(`document.querySelector('[data-testid="detailed-options"]').open = true`)
   await click('[data-testid="video-type-gaming-stream"]')
   await win.webContents.executeJavaScript(`(() => {
     const frame = document.querySelector('[data-testid="stream-template-frame"]')
@@ -191,6 +192,13 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
     throw new Error('Smoke capture: outlining the webcam did not set the stream template')
   }
   await shot('setup-stream-template')
+  // The short setup: caption language first, details folded away.
+  if (!(await win.webContents.executeJavaScript(`!!document.querySelector('[data-testid="caption-language-uk"]')`))) {
+    throw new Error('Smoke capture: the caption language choice is missing')
+  }
+  await win.webContents.executeJavaScript(`document.querySelector('[data-testid="detailed-options"]').open = false; document.querySelector('[data-testid="caption-language-card"]').scrollIntoView({ block: 'start' })`)
+  await sleep(400)
+  await shot('setup-short')
   if (await win.webContents.executeJavaScript(`document.querySelector('[data-testid="editorial-ranking-toggle"]').checked`)) {
     throw new Error('Smoke capture: editorial ranking must be opt-in on a new project')
   }

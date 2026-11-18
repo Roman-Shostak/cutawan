@@ -195,6 +195,9 @@ describe('stream hints', () => {
     expect(prompt).toContain('Game: Лягай!')
     expect(prompt).toContain('Friend: Брат, дивись')
     expect(prompt).toContain('[game: intense]')
+    // Game streams are judged as stream clips, not as talks.
+    expect(prompt).toContain('GAME STREAM')
+    expect(prompt).toContain('inventory')
   })
 
   it('claims a covering clip for a marker and cuts a new clip around an uncovered one', async () => {

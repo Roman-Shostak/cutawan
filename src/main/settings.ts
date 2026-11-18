@@ -12,6 +12,8 @@ import type {
   QualityPreference,
   SettingsUpdate,
   StreamTemplate,
+  CaptionLanguage,
+  LastAnalyzeChoices,
 } from '@shared/types'
 import { normalizeStreamTemplate } from '@shared/composition'
 import { getGpuStatus } from './pipeline/encoders'
@@ -46,6 +48,8 @@ interface StoredSettings {
   importCookiesBrowser: BrowserCookieSource
   transcriptionVocabulary: string
   streamTemplate: StreamTemplate | null
+  captionLanguage: CaptionLanguage
+  lastAnalyze: LastAnalyzeChoices | null
 }
 
 const DEFAULT_BRANDING: BrandingSettings = {
@@ -86,7 +90,9 @@ const DEFAULTS: StoredSettings = {
   brandVoice: DEFAULT_BRAND_VOICE,
   importCookiesBrowser: '',
   transcriptionVocabulary: '',
-  streamTemplate: null
+  streamTemplate: null,
+  captionLanguage: 'uk',
+  lastAnalyze: null
 }
 
 function settingsPath(): string {
@@ -139,7 +145,9 @@ function load(): StoredSettings {
         },
         brandVoice: { ...DEFAULT_BRAND_VOICE, ...(parsed.brandVoice ?? {}) },
         transcriptionVocabulary: typeof parsed.transcriptionVocabulary === 'string' ? parsed.transcriptionVocabulary : '',
-        streamTemplate: normalizeStreamTemplate(parsed.streamTemplate)
+        streamTemplate: normalizeStreamTemplate(parsed.streamTemplate),
+        captionLanguage: parsed.captionLanguage === 'original' ? 'original' : 'uk',
+        lastAnalyze: normalizeLastAnalyze(parsed.lastAnalyze)
       }
       applyEndpoints(cache)
       return cache
@@ -238,7 +246,9 @@ export async function getSettings(): Promise<AppSettings> {
     importCookiesBrowser: s.importCookiesBrowser,
     hasImportCookiesFile: getImportCookiesPath() !== null,
     transcriptionVocabulary: s.transcriptionVocabulary,
-    streamTemplate: s.streamTemplate
+    streamTemplate: s.streamTemplate,
+    captionLanguage: s.captionLanguage,
+    lastAnalyze: s.lastAnalyze
   }
 }
 
@@ -250,6 +260,32 @@ export function getImportPreferences(): {
   return {
     importCookiesBrowser: load().importCookiesBrowser,
     importCookiesPath: getImportCookiesPath()
+  }
+}
+
+/** Captions as spoken, or everything in Ukrainian. */
+export function getCaptionLanguage(): CaptionLanguage {
+  return load().captionLanguage
+}
+
+/** Remember the setup choices of a "Get clips" run for the next video. */
+export function saveLastAnalyze(choices: LastAnalyzeChoices): void {
+  const normalized = normalizeLastAnalyze(choices)
+  if (normalized) persist({ ...load(), lastAnalyze: normalized })
+}
+
+const VIDEO_TYPES = ['auto', 'talking-head', 'podcast', 'webinar', 'product-demo', 'gaming-stream']
+const CLIP_LENGTHS = ['auto', 'short', 'medium', 'long']
+
+function normalizeLastAnalyze(raw: unknown): LastAnalyzeChoices | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Partial<LastAnalyzeChoices>
+  return {
+    videoType: VIDEO_TYPES.includes(r.videoType as string) ? r.videoType as LastAnalyzeChoices['videoType'] : 'gaming-stream',
+    clipLength: CLIP_LENGTHS.includes(r.clipLength as string) ? r.clipLength as LastAnalyzeChoices['clipLength'] : 'auto',
+    hookFirst: r.hookFirst === true,
+    visualDiscovery: r.visualDiscovery === true,
+    editorialRanking: r.editorialRanking === true
   }
 }
 
@@ -348,6 +384,8 @@ export async function updateSettings(update: SettingsUpdate): Promise<AppSetting
   if (update.importCookiesBrowser !== undefined) s.importCookiesBrowser = update.importCookiesBrowser
   if (update.transcriptionVocabulary !== undefined) s.transcriptionVocabulary = update.transcriptionVocabulary.slice(0, 600)
   if (update.streamTemplate !== undefined) s.streamTemplate = normalizeStreamTemplate(update.streamTemplate)
+  if (update.captionLanguage === 'original' || update.captionLanguage === 'uk') s.captionLanguage = update.captionLanguage
+  if (update.lastAnalyze !== undefined) s.lastAnalyze = normalizeLastAnalyze(update.lastAnalyze)
   if (update.clearImportCookiesFile) await clearImportCookiesFile()
   persist(s)
   return getSettings()

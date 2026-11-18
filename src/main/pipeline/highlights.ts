@@ -282,6 +282,17 @@ Virality scoring rubric (0-99), grounded in sharing research (Berger & Milkman 2
 Sum the parts for the final score. Be honest and discriminating: most clips score 40-75, reserve 85+ for exceptional moments.`
 
 /**
+ * What a good clip is in a live game stream, which the general rubric above
+ * (stories, insights, practical value) does not capture. Exported for the
+ * visual and editorial passes, which take it as the creator's focus.
+ */
+export const GAME_STREAM_GUIDANCE = `This is a recording of a live GAME STREAM; the clips are for gaming viewers on TikTok, Shorts and Reels. Judge moments as a stream clipper would:
+- Great: big reactions (screaming, laughing, rage, panic, disbelief); fails and deaths, especially sudden or funny ones, with the streamer's reaction; clutch plays, close escapes, wins against the odds; jump scares and surprises; funny banter with friends or teammates, roasts and running jokes that work without context; a strong story or hot take told with energy.
+- Weak or useless: menus, inventory and loot management, crafting, settings, loading and queueing; talk about tech problems (servers, ping, provider, stream setup); greetings, reading donations or chat without a payoff, long calm explanations of game mechanics, quiet grinding.
+- A stream clip needs no lesson or story arc. Its shape is setup (what is happening) → peak (the moment) → reaction (the streamer's response). Start a few seconds before the action and end right after the reaction lands; keep it tight.
+- Evidence of action: lines tagged [delivery: energetic] or [game: intense], short exclamations, swearing, laughter, overlapping voices, and what the game and friends say around it. Calm commentary over nothing scores low even when well worded.`
+
+/**
  * How many clips to ask the LLM for: roughly one per minute of source video.
  * Exported for tests.
  */
@@ -736,6 +747,7 @@ async function requestHighlights(
     options.prompt.trim()
       ? `The creator gave these special instructions, which take priority when choosing moments: "${options.prompt.trim()}"`
       : '',
+    options.videoType === 'gaming-stream' ? GAME_STREAM_GUIDANCE : '',
     ...formatHintsForModel(hints, sentences),
     'Transcript, one sentence per line, each prefixed with [start - end] in seconds from the start of the video. Start every clip on the start time of a line and end it on the end time of a line:',
     transcriptText

@@ -214,7 +214,8 @@ export async function applyGameDialogue(
     return
   }
   const gameTrack = routing.gameTrack
-  const target = settings.transcriptionLanguage && settings.transcriptionLanguage !== 'auto' ? settings.transcriptionLanguage : 'uk'
+  // Game lines are always for a Ukrainian audience.
+  const target = 'uk'
   await timed('game-dialogue', () => ensureGameDialogue(project, workDir, {
     apiKey: apiKey ?? '',
     transcriptionModel: settings.transcriptionModel,

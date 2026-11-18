@@ -1,3 +1,4 @@
+import { distributeWords } from './captionLanguage'
 import type { Clip, GameDialogue, GameDialogueLine, SpeechRegion, Transcript, TranscriptWord } from './types'
 
 /**
@@ -167,18 +168,7 @@ function shownLines(clip: Clip, dialogue: GameDialogue | null | undefined, chat:
  * the original word timings cannot be reused.
  */
 export function chatLineWords(line: { start: number; end: number; text: string }): TranscriptWord[] {
-  const texts = line.text.split(/\s+/).filter(Boolean)
-  if (!texts.length) return []
-  const weights = texts.map((t) => t.length + 2)
-  const total = weights.reduce((a, b) => a + b, 0)
-  const span = Math.max(0.1, line.end - line.start)
-  let t = line.start
-  return texts.map((text, i) => {
-    const length = (span * weights[i]) / total
-    const word: TranscriptWord = { text, start: t, end: t + length * 0.92, speaker: 'chat' }
-    t += length
-    return word
-  })
+  return distributeWords(line.text, line.start, line.end).map((word) => ({ ...word, speaker: 'chat' as const }))
 }
 
 /**

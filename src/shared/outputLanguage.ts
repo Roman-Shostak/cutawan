@@ -12,6 +12,8 @@
 const LANGUAGE_NAMES: Record<string, string> = {
   uk: 'Ukrainian',
   ukrainian: 'Ukrainian',
+  ru: 'Russian',
+  russian: 'Russian',
   en: 'English',
   english: 'English',
   pl: 'Polish',

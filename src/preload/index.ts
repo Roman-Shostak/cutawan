@@ -67,6 +67,9 @@ const api = {
   /** Probe a project's audio tracks (older projects saved before tracks were recorded). */
   probeAudioTracks: (projectId: string): Promise<Project> =>
     ipcRenderer.invoke('project:probeAudioTracks', projectId),
+  /** Find the webcam in the recording once (needs an analysis key); returns the project. */
+  detectWebcam: (projectId: string): Promise<Project> =>
+    ipcRenderer.invoke('project:detectWebcam', projectId),
   /** Edit one game-dialogue line's text or speaker (shared by every clip). */
   updateGameLine: (projectId: string, lineId: string, patch: GameLinePatch): Promise<Project> =>
     ipcRenderer.invoke('project:updateGameLine', projectId, lineId, patch),

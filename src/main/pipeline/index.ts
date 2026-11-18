@@ -8,7 +8,7 @@ import { mapLimit } from './concurrency'
 import { extractThumbnail, probeVideo } from './ffmpeg'
 import { ensureTranscript } from './projectTranscript'
 import { applyGameDialogue } from './gameDialogue'
-import { dedupeClips, detectHighlights, maxDurationFor, type HighlightHints } from './highlights'
+import { dedupeClips, detectHighlights, GAME_STREAM_GUIDANCE, maxDurationFor, type HighlightHints } from './highlights'
 import { discoverSourceMoments } from './sourceDiscovery'
 import { visualCandidateClip } from './visualCandidates'
 import { rankEditorialCandidates } from './editorialReview'
@@ -30,7 +30,8 @@ import {
   YtDlpError,
   type CookieAuthOptions
 } from './ytdlp'
-import { getAnalysisCredential, getImportPreferences, getModelPreferences, missingCredentialName, saveStreamTemplate, getTranscriptionVocabulary } from '../settings'
+import { getAnalysisCredential, getImportPreferences, getModelPreferences, missingCredentialName, saveStreamTemplate, getTranscriptionVocabulary, getCaptionLanguage, saveLastAnalyze } from '../settings'
+import { ensureCaptionLanguage } from './captionLanguage'
 import { trackLoudness } from './energy'
 import { applyStreamTemplate } from '@shared/streamLayout'
 import { DEFAULT_STREAM_TEMPLATE, normalizeStreamTemplate } from '@shared/composition'
@@ -161,13 +162,21 @@ export async function analyzeProject(
   try {
     const routing = options.audioRouting
     const gameTrack = routing?.gameTrack ?? null
-    const transcript = await timed('transcript', () => ensureTranscript(
+    // The next video's setup starts from these choices.
+    saveLastAnalyze({
+      videoType: options.videoType, clipLength: options.clipLength, hookFirst: options.hookFirst,
+      visualDiscovery: options.visualDiscovery === true, editorialRanking: options.editorialRanking === true
+    })
+    if (options.retranscribe) project.transcript = null
+    let transcript = await timed('transcript', () => ensureTranscript(
       project,
       workDir,
       {
         apiKey,
         model: settings.transcriptionModel,
-        language: settings.transcriptionLanguage,
+        // Detected per chunk: forcing one language garbles speech in another,
+        // and the caption-language step below decides what viewers read.
+        language: 'auto',
         span: { from: 0.02, to: gameTrack === null ? 0.58 : 0.46 },
         noSpeechError: 'Мову не знайдено. Увімкніть «Шукати візуальні моменти», щоб шукати демонстрації та видимі події.',
         allowNoSpeech: options.visualDiscovery === true,
@@ -177,13 +186,21 @@ export async function analyzeProject(
       onProgress,
       signal
     ))
+    await ensureCaptionLanguage(project, getCaptionLanguage(),
+      { apiKey: getAnalysisCredential() || null, model: settings.analysisModel }, onProgress, gameTrack === null ? 0.58 : 0.46, signal)
+    if (project.transcript) transcript = project.transcript
     await applyGameDialogue(project, workDir, routing, options.gameContext ?? '', apiKey,
       { from: 0.46, to: 0.58 }, onProgress, signal)
 
+    // The visual and editorial passes judge against the creator's focus; for
+    // game streams that focus includes what makes a stream clip.
+    const focusPrompt = options.videoType === 'gaming-stream'
+      ? [options.prompt.trim(), GAME_STREAM_GUIDANCE].filter(Boolean).join('\n\n')
+      : options.prompt
     const discovery = options.visualDiscovery ? await timed('source-discovery', () => discoverSourceMoments({
       videoPath: project.video.path, durationSec: project.video.durationSec, transcript,
       apiKey, model: settings.analysisModel, providerCacheKey: settings.analysisProviderKey,
-      prompt: options.prompt, maxClipDurationSec: maxDurationFor(options.clipLength),
+      prompt: focusPrompt, maxClipDurationSec: maxDurationFor(options.clipLength),
       cacheDir: join(projectDir(project.id), 'discovery-cache'), signal,
       onProgress: message => onProgress({ stage: 'analyze', progress: .58, message })
     })) : undefined
@@ -280,7 +297,7 @@ export async function analyzeProject(
       const ranked = await timed('editorial-ranking', () => rankEditorialCandidates({
         video: project.video, sourceRevision: project.sourceRevision ?? 0, transcript,
         clips, baselineClips, apiKey, model: settings.analysisModel, providerCacheKey: settings.analysisProviderKey,
-        prompt: options.prompt, signal,
+        prompt: focusPrompt, signal,
         onProgress: message => onProgress({ stage: 'analyze', progress: .8, message })
       }))
       ranked.report.generationId = generationId

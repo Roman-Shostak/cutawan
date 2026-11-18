@@ -16,14 +16,26 @@ const ZOOMS: Array<{ value: StreamGameZoom; label: string; hint: string }> = [
   { value: 'full', label: 'Уся гра', hint: 'Увесь кадр гри, нічого не обрізано' }
 ]
 
+/** Where the webcam outline came from, for the notice above the frame. */
+export type StreamTemplateStatus = 'detecting' | 'found' | 'none' | 'manual'
+
+const STATUS_TEXT: Record<StreamTemplateStatus, { text: string; tone: string } | null> = {
+  detecting: { text: 'Шукаю вебку на кадрах…', tone: 'text-zinc-400' },
+  found: { text: 'Вебку знайдено автоматично — перевірте рамку праворуч. Якщо щось не так, обведіть її мишкою.', tone: 'text-emerald-300/90' },
+  none: { text: 'Вебки на цьому записі не знайдено. Якщо вона є — обведіть її мишкою.', tone: 'text-amber-300/90' },
+  manual: null
+}
+
 const PREVIEW_W = 180
 const PREVIEW_H = 320
 
-export default function StreamTemplatePanel({ project, template, onChange }: {
+export default function StreamTemplatePanel({ project, template, onChange, status = 'manual' }: {
   project: Project
   template: StreamTemplate
   onChange: (template: StreamTemplate) => void
+  status?: StreamTemplateStatus
 }): React.JSX.Element {
+  const notice = STATUS_TEXT[status]
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
@@ -89,6 +101,7 @@ export default function StreamTemplatePanel({ project, template, onChange }: {
         Обведіть мишкою вебку на кадрі зліва — праворуч одразу видно, як виглядатиме кліп у TikTok.
         Шаблон запам’ятається для наступних відео.
       </p>
+      {notice && <p className={`mt-2 text-xs ${notice.tone}`} data-testid="stream-template-status">{notice.text}</p>}
       <div className="mt-4 flex gap-4">
         <div className="min-w-0 flex-1">
           <div

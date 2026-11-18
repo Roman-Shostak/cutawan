@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Upload,
   Captions,
@@ -19,7 +19,8 @@ import { useStore } from '../store'
 import { formatDuration, formatBytes, pluralUk } from '../lib/format'
 import MissingSourceBanner from './MissingSourceBanner'
 import AudioTracksPanel, { defaultAudioRouting } from './AudioTracksPanel'
-import StreamTemplatePanel from './StreamTemplatePanel'
+import StreamTemplatePanel, { type StreamTemplateStatus } from './StreamTemplatePanel'
+import CaptionLanguageCard from './CaptionLanguageCard'
 import { DEFAULT_STREAM_TEMPLATE, normalizeStreamTemplate } from '@shared/composition'
 import DiscoverySummary from './DiscoverySummary'
 import { EditorialRankingSummary } from './EditorialSummary'
@@ -53,10 +54,10 @@ const COOKIE_BROWSERS: Array<{ value: BrowserCookieSource; label: string }> = [
 ]
 
 const LENGTH_OPTIONS: Array<{ value: ClipLengthPreference; label: string; hint: string }> = [
-  { value: 'auto', label: 'Auto', hint: 'Вирішує ШІ' },
-  { value: 'short', label: 'Short', hint: '15–30s' },
-  { value: 'medium', label: 'Medium', hint: '30–60s' },
-  { value: 'long', label: 'Long', hint: '60–90s' }
+  { value: 'auto', label: 'Авто', hint: 'Вирішує ШІ' },
+  { value: 'short', label: 'Короткі', hint: '15–30 с' },
+  { value: 'medium', label: 'Середні', hint: '30–60 с' },
+  { value: 'long', label: 'Довгі', hint: '60–90 с' }
 ]
 
 export default function HomeScreen(): React.JSX.Element {
@@ -294,17 +295,43 @@ function SetupPanel(): React.JSX.Element {
   const [followSpeaker, setFollowSpeaker] = useState(false)
   const [captionZoom, setCaptionZoom] = useState(false)
   const [prompt, setPrompt] = useState(project.prompt)
-  const [clipLength, setClipLength] = useState<ClipLengthPreference>('auto')
-  const [videoType, setVideoType] = useState<VideoType>(project.videoType ?? 'gaming-stream')
+  // A new video starts from the choices of the last run; a project that
+  // already has clips keeps its own.
+  const last = settings?.lastAnalyze ?? null
+  const hasClips = project.clips.length > 0
+  const [clipLength, setClipLength] = useState<ClipLengthPreference>(last?.clipLength ?? 'auto')
+  const [videoType, setVideoType] = useState<VideoType>(
+    (hasClips ? project.videoType : last?.videoType) ?? project.videoType ?? 'gaming-stream')
   // Image inserts are hidden in this fork: they do not suit gameplay.
   const broll = false
   const [streamTemplate, setStreamTemplate] = useState<StreamTemplate>(
     () => normalizeStreamTemplate(settings?.streamTemplate) ?? DEFAULT_STREAM_TEMPLATE
   )
   // Off by default: hook-first trimming rewrites clip starts with an extra LLM pass.
-  const [hookFirst, setHookFirst] = useState(false)
-  const [visualDiscovery, setVisualDiscovery] = useState(project.visualDiscovery ?? false)
-  const [editorialRanking, setEditorialRanking] = useState(project.rankingEnabled ?? false)
+  const [hookFirst, setHookFirst] = useState(last?.hookFirst ?? false)
+  const [visualDiscovery, setVisualDiscovery] = useState(project.visualDiscovery ?? last?.visualDiscovery ?? false)
+  const [editorialRanking, setEditorialRanking] = useState(project.rankingEnabled ?? last?.editorialRanking ?? false)
+  // Transcripts made before languages were detected per chunk (one forced
+  // language) are worth redoing: they garble speech in any other language.
+  const [retranscribe, setRetranscribe] = useState(!!project.transcript && project.transcript.whisperLanguage !== 'auto')
+
+  // The webcam is found automatically once per video; until the creator
+  // changes the template by hand, the detection fills it in.
+  const detectWebcam = useStore((s) => s.detectWebcam)
+  const templateTouched = useRef(false)
+  const detecting = useStore((s) => s.detectingWebcam === project.id)
+  useEffect(() => {
+    if (videoType !== 'gaming-stream' || project.webcamDetection || needsKeyForDetection) return
+    void detectWebcam()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id, videoType])
+  useEffect(() => {
+    const found = project.webcamDetection
+    if (found && !templateTouched.current) setStreamTemplate((t) => ({ ...t, webcam: found.webcam }))
+  }, [project.webcamDetection])
+  const webcamStatus: StreamTemplateStatus = detecting ? 'detecting'
+    : !project.webcamDetection ? 'manual'
+    : project.webcamDetection.webcam ? 'found' : 'none'
   const probeAudioTracks = useStore((s) => s.probeAudioTracks)
   useEffect(() => { void probeAudioTracks() }, [project.id, probeAudioTracks])
   const [routingChoice, setRouting] = useState<AudioRouting | null>(null)
@@ -312,6 +339,8 @@ function SetupPanel(): React.JSX.Element {
   const [gameContext, setGameContext] = useState(project.gameDialogue?.context ?? '')
   const audioOptions = routing ? { audioRouting: routing, gameContext } : {}
 
+  const needsKeyForDetection = settings !== null &&
+    settings.subscription.provider === 'api' && !settings.hasApiKey
   // Captioning an already-transcribed video makes no API calls, so it does not
   // need a key; clip finding always does.
   const needsKey =
@@ -320,6 +349,12 @@ function SetupPanel(): React.JSX.Element {
     !(settings.subscription.provider === 'openrouter' ? settings.hasOpenRouterKey : settings.hasApiKey) &&
     !(mode === 'whole-video' && (project.transcript !== null || settings.subscription.localTranscription))
   const highlights = highlightClips(project)
+  const detailsSummary = [
+    VIDEO_TYPE_OPTIONS.find((o) => o.value === videoType)?.label,
+    `довжина: ${LENGTH_OPTIONS.find((o) => o.value === clipLength)?.label.toLowerCase()}`,
+    routing ? `голос: доріжка ${routing.voiceTrack + 1}${routing.gameTrack !== null ? `, гра: ${routing.gameTrack + 1}` : ''}` : null,
+    [visualDiscovery && 'візуальні моменти', editorialRanking && 'ранжування', hookFirst && 'гачок'].filter(Boolean).join(', ') || null
+  ].filter(Boolean).join(' · ')
 
   return (
     <div className="pb-6">
@@ -385,6 +420,20 @@ function SetupPanel(): React.JSX.Element {
         <div className="col-span-3 flex flex-col gap-5">
           <ModeSwitcher mode={mode} onChange={setMode} />
 
+          <CaptionLanguageCard
+            project={project}
+            retranscribe={retranscribe}
+            onRetranscribe={setRetranscribe}
+          />
+
+          {mode === 'clips' ? (
+            <>
+            {videoType === 'gaming-stream' && (
+              <StreamTemplatePanel project={project} template={streamTemplate} onChange={(t) => { templateTouched.current = true; setStreamTemplate(t) }} status={webcamStatus} />
+            )}
+            </>
+          ) : (
+            <>
           {routing && (
             <AudioTracksPanel
               project={project}
@@ -395,8 +444,78 @@ function SetupPanel(): React.JSX.Element {
             />
           )}
 
-          {mode === 'clips' ? (
-            <>
+            <CaptionVideoOptions
+              aspect={captionAspect}
+              onAspect={setCaptionAspect}
+              followSpeaker={followSpeaker}
+              onFollowSpeaker={setFollowSpeaker}
+              autoZoom={captionZoom}
+              onAutoZoom={setCaptionZoom}
+              durationSec={project.video.durationSec}
+            />
+            </>
+          )}
+
+          {pipelineError && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+              <span>{pipelineError}</span>
+            </div>
+          )}
+
+          {needsKey ? (
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/15 px-5 py-3.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/25"
+            >
+              {settings?.subscription.provider === 'openrouter' ? 'Спочатку додайте ключ OpenRouter' : 'Спочатку додайте API-ключ'}
+            </button>
+          ) : (
+            <div>
+              <button
+                data-testid="start-button"
+                onClick={() =>
+                  mode === 'clips'
+                    ? void analyze({ prompt, clipLength, broll, hookFirst, videoType, visualDiscovery, editorialRanking, ...audioOptions,
+                        ...(videoType === 'gaming-stream' ? { streamTemplate } : {}), retranscribe })
+                    : void captionWholeVideo({
+                        aspect: captionAspect,
+                        followSpeaker,
+                        autoZoom: captionZoom,
+                        ...audioOptions,
+                        retranscribe
+                      })
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-5 py-3.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-black/40 transition hover:bg-white"
+              >
+                {mode === 'clips' ? (
+                  <>
+                    <Sparkles size={17} />
+                    {highlights.length > 0 ? 'Згенерувати кліпи заново' : 'Отримати кліпи'}
+                  </>
+                ) : (
+                  <>
+                    <Captions size={17} />
+                    {findWholeVideoClip(project)
+                      ? 'Переробити відео з субтитрами'
+                      : 'Розпізнати й додати субтитри'}
+                  </>
+                )}
+              </button>
+              {project.transcript && !retranscribe && (
+                <p className="mt-2 text-center text-[11px] text-zinc-500">
+                  Розшифровка вже збережена — розпізнавання пропускається. Аналіз кліпів усе ще може зайняти час.
+                </p>
+              )}
+            </div>
+          )}
+
+          {mode === 'clips' && (
+            <details className="rounded-2xl border border-surface-700 bg-surface-900/60 p-5" data-testid="detailed-options">
+              <summary className="cursor-pointer text-sm font-semibold text-zinc-300">
+                Детальні налаштування <span className="font-normal text-zinc-500">· {detailsSummary}</span>
+              </summary>
+              <div className="mt-4 flex flex-col gap-5">
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Film size={15} className="text-accent-400" />
@@ -424,9 +543,16 @@ function SetupPanel(): React.JSX.Element {
                 ))}
               </div>
             </div>
-            {videoType === 'gaming-stream' && (
-              <StreamTemplatePanel project={project} template={streamTemplate} onChange={setStreamTemplate} />
-            )}
+          {routing && (
+            <AudioTracksPanel
+              project={project}
+              routing={routing}
+              onRoutingChange={setRouting}
+              gameContext={gameContext}
+              onGameContextChange={setGameContext}
+            />
+          )}
+
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <Wand2 size={15} className="text-accent-400" />
@@ -462,11 +588,7 @@ function SetupPanel(): React.JSX.Element {
                 ))}
               </div>
             </div>
-            <details className="group rounded-2xl border border-surface-700 bg-surface-900 p-5" data-testid="advanced-options">
-              <summary className="cursor-pointer text-sm font-semibold text-zinc-300">
-                Додатково <span className="font-normal text-zinc-500">(бета-функції й додаткові платні запити)</span>
-              </summary>
-              <div className="mt-4 flex flex-col gap-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Бета-функції й додаткові платні запити</div>
             <div className="rounded-2xl border border-surface-700 bg-surface-900 p-5">
               <button
                 onClick={() => setHookFirst(!hookFirst)}
@@ -519,70 +641,6 @@ function SetupPanel(): React.JSX.Element {
             </div>
               </div>
             </details>
-            </>
-          ) : (
-            <CaptionVideoOptions
-              aspect={captionAspect}
-              onAspect={setCaptionAspect}
-              followSpeaker={followSpeaker}
-              onFollowSpeaker={setFollowSpeaker}
-              autoZoom={captionZoom}
-              onAutoZoom={setCaptionZoom}
-              durationSec={project.video.durationSec}
-            />
-          )}
-
-          {pipelineError && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-              <AlertTriangle size={17} className="mt-0.5 shrink-0" />
-              <span>{pipelineError}</span>
-            </div>
-          )}
-
-          {needsKey ? (
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500/15 px-5 py-3.5 text-sm font-semibold text-amber-400 transition hover:bg-amber-500/25"
-            >
-              {settings?.subscription.provider === 'openrouter' ? 'Спочатку додайте ключ OpenRouter' : 'Спочатку додайте API-ключ'}
-            </button>
-          ) : (
-            <div>
-              <button
-                data-testid="start-button"
-                onClick={() =>
-                  mode === 'clips'
-                    ? void analyze({ prompt, clipLength, broll, hookFirst, videoType, visualDiscovery, editorialRanking, ...audioOptions,
-                        ...(videoType === 'gaming-stream' ? { streamTemplate } : {}) })
-                    : void captionWholeVideo({
-                        aspect: captionAspect,
-                        followSpeaker,
-                        autoZoom: captionZoom,
-                        ...audioOptions
-                      })
-                }
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-100 px-5 py-3.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-black/40 transition hover:bg-white"
-              >
-                {mode === 'clips' ? (
-                  <>
-                    <Sparkles size={17} />
-                    {highlights.length > 0 ? 'Згенерувати кліпи заново' : 'Отримати кліпи'}
-                  </>
-                ) : (
-                  <>
-                    <Captions size={17} />
-                    {findWholeVideoClip(project)
-                      ? 'Переробити відео з субтитрами'
-                      : 'Розпізнати й додати субтитри'}
-                  </>
-                )}
-              </button>
-              {project.transcript && (
-                <p className="mt-2 text-center text-[11px] text-zinc-500">
-                  Розшифровка вже збережена — розпізнавання пропускається. Аналіз кліпів усе ще може зайняти час.
-                </p>
-              )}
-            </div>
           )}
         </div>
       </div>

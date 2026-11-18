@@ -16,7 +16,8 @@ import { extractThumbnail } from './ffmpeg'
 import { analyzeClipFocus } from './faces'
 import { ensureTranscript } from './projectTranscript'
 import { applyGameDialogue } from './gameDialogue'
-import { getAnalysisCredential, getModelPreferences, getTranscriptionVocabulary } from '../settings'
+import { getAnalysisCredential, getCaptionLanguage, getModelPreferences, getTranscriptionVocabulary } from '../settings'
+import { ensureCaptionLanguage } from './captionLanguage'
 import { usesLocalTranscription } from '../subscription'
 import { projectDir, updateProject } from '../projects'
 
@@ -47,6 +48,7 @@ export async function captionWholeVideo(
   // run makes no API calls at all, so redoing the crop or the speaker track
   // offline is allowed.
   const apiKey = getAnalysisCredential()
+  if (options.retranscribe) project.transcript = null
   if (!apiKey && !project.transcript && !usesLocalTranscription()) {
     throw new Error('Розпізнавання мови не налаштовано. Додайте API-ключ або налаштуйте локальний Whisper у Налаштуваннях.')
   }
@@ -61,7 +63,7 @@ export async function captionWholeVideo(
       {
         apiKey: apiKey ?? '',
         model: settings.transcriptionModel,
-        language: settings.transcriptionLanguage,
+        language: 'auto',
         span: { from: 0.02, to: options.audioRouting?.gameTrack != null ? 0.58 : 0.7 },
         noSpeechError:
           'У цьому відео не знайдено мови, тож субтитрувати нічого.',
@@ -71,6 +73,8 @@ export async function captionWholeVideo(
       onProgress,
       signal
     )
+    await ensureCaptionLanguage(project, getCaptionLanguage(),
+      { apiKey: getAnalysisCredential() || null, model: settings.analysisModel }, onProgress, 0.58, signal)
     await applyGameDialogue(project, workDir, options.audioRouting, options.gameContext ?? '', apiKey,
       { from: 0.58, to: 0.7 }, onProgress, signal)
 

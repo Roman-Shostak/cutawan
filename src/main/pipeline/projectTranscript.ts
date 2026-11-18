@@ -121,6 +121,7 @@ export async function ensureTranscript(
   if (transcript.segments.length === 0 && !options.allowNoSpeech) throw new Error(options.noSpeechError)
   transcript.speech = (await speech) ?? undefined
   if (audioTrack !== 0) transcript.audioTrack = audioTrack
+  transcript.whisperLanguage = options.language
 
   // Vocal energy feeds the virality analysis (arousal signal) and the auto
   // zoom's emphasis punch-ins, so both flows want it annotated.

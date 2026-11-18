@@ -22,6 +22,7 @@ import { analyzeProject, createProject, createProjectFromUrl } from './pipeline'
 import { captionWholeVideo } from './pipeline/wholeVideo'
 import { downloadGpuFfmpeg } from './pipeline/encoders'
 import { probeTracksAndMarkers, probeVideo } from './pipeline/ffmpeg'
+import { detectWebcam } from './pipeline/webcamDetect'
 import { getTimeline } from './pipeline/timeline'
 import { renderClip } from './pipeline/render'
 import { ensureClipReframe } from './pipeline/reframe'
@@ -235,6 +236,15 @@ export function registerIpcHandlers(): void {
       p.video.audioTracks = probed.audioTracks
       p.video.markers = probed.markers
     })
+  })
+
+  handle('project:detectWebcam', async (_e, projectId: string) => {
+    const project = await loadProject(projectId)
+    if (project.webcamDetection) return project
+    const apiKey = getAnalysisCredential()
+    if (!apiKey) return project
+    await detectWebcam(project, { apiKey, model: getModelPreferences().analysisModel })
+    return loadProject(projectId)
   })
 
   handle('project:updateGameLine', async (_e, projectId: string, lineId: string, patch: GameLinePatch) => {
