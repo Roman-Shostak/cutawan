@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs'
 import { copyFile, mkdir, rm } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import type {
+  GameLinePatch,
   AnalyzeOptions,
   CaptionVideoOptions,
   Clip,
@@ -16,7 +17,7 @@ import type {
 import { VIDEO_EXTENSIONS } from '@shared/video'
 import { sizeTargetBytesFromMb } from '@shared/uploadBudget'
 import { mergeClipSave, needsReframe } from '@shared/reframe'
-import { visibleGameLines } from '@shared/gameDialogue'
+import { visibleChatLines, visibleGameLines } from '@shared/gameDialogue'
 import { analyzeProject, createProject, createProjectFromUrl } from './pipeline'
 import { captionWholeVideo } from './pipeline/wholeVideo'
 import { downloadGpuFfmpeg } from './pipeline/encoders'
@@ -233,11 +234,15 @@ export function registerIpcHandlers(): void {
     return updateProject(projectId, (p) => { p.video.audioTracks = audioTracks })
   })
 
-  handle('project:updateGameLine', async (_e, projectId: string, lineId: string, translation: string) => {
+  handle('project:updateGameLine', async (_e, projectId: string, lineId: string, patch: GameLinePatch) => {
     return updateProject(projectId, (project) => {
       const line = project.gameDialogue?.lines.find((l) => l.id === lineId)
-      if (!line) throw new Error('Game dialogue line not found')
-      line.translation = translation.trim()
+      if (!line) throw new Error('Репліку не знайдено')
+      if (typeof patch.translation === 'string') line.translation = patch.translation.trim()
+      if (patch.speaker === 'game' || patch.speaker === 'chat') {
+        line.speaker = patch.speaker
+        line.speakerSetByUser = true
+      }
     })
   })
 
@@ -303,6 +308,7 @@ export function registerIpcHandlers(): void {
         source: project.video,
         transcript: project.transcript,
         gameLines: visibleGameLines(clip, project.gameDialogue),
+        chatLines: visibleChatLines(clip, project.gameDialogue),
         outputPath,
         encoder: prefs.encoder,
         quality: prefs.quality,

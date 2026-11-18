@@ -190,7 +190,8 @@ async function main(): Promise<void> {
       lines: [
         { id: 'demo-g0', start: DEMO_CLIPS[0].start + 1, end: DEMO_CLIPS[0].start + 3.5, text: 'Joel, get down! They are right behind us!', translation: 'Джоеле, лягай! Вони прямо за нами!', language: 'english' },
         { id: 'demo-g1', start: DEMO_CLIPS[0].start + 6, end: DEMO_CLIPS[0].start + 8, text: 'Где патроны? У меня пусто.', translation: 'Де набої? У мене порожньо.', language: 'russian' },
-        { id: 'demo-g2', start: DEMO_CLIPS[0].start + 10, end: DEMO_CLIPS[0].start + 11.5, text: 'Shh. Stay quiet.', translation: 'Тихо. Не шуми.', language: 'english' }
+        { id: 'demo-g2', start: DEMO_CLIPS[0].start + 10, end: DEMO_CLIPS[0].start + 11.5, text: 'Shh. Stay quiet.', translation: 'Тихо. Не шуми.', language: 'english' },
+        { id: 'demo-g3', start: DEMO_CLIPS[0].start + 13, end: DEMO_CLIPS[0].start + 15, text: 'Брат, ти це бачив взагалі?', translation: 'Брат, ти це бачив взагалі?', language: 'ukrainian', speaker: 'chat' }
       ]
     }
   }

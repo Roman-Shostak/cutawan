@@ -26,7 +26,7 @@ import { timed } from './timing'
 import { loudnormFilter, measureLoudness, normalisationMode, type LoudnessStats } from './loudness'
 import { buildAss, fontsDir } from './captions'
 import { fontMetricsForFamily } from '../fonts'
-import { GAME_SUBTITLE_STYLE } from '@shared/gameDialogue'
+import { GAME_SUBTITLE_STYLE, withChatLines } from '@shared/gameDialogue'
 import { mediaJobs } from './mediaJobs'
 import {
   audioArgs,
@@ -585,6 +585,8 @@ export interface RenderJob {
   fontsDirPath?: string
   /** Translated game-dialogue subtitles to burn, in source seconds (already filtered for the clip). */
   gameLines?: Array<{ start: number; end: number; text: string }>
+  /** A friend's party-chat lines, captioned with the creator's words (source seconds). */
+  chatLines?: Array<{ start: number; end: number; text: string }>
   /**
    * Hard ceiling for the finished file, in bytes. When set, the render becomes
    * a single size-targeted two-pass encode at the largest frame size the
@@ -644,7 +646,10 @@ async function render(job: RenderJob): Promise<RenderResult> {
   const outputDuration = map ? map.outputDuration : duration
 
   let effectiveClip = clip
-  let captionTranscript = transcript
+  // The friend's chat lines caption like the creator's own words; cuts above
+  // were planned from the creator's words alone.
+  const spokenTranscript = withChatLines(transcript, job.chatLines ?? [])
+  let captionTranscript = spokenTranscript
   let captionStart = start
   let captionEnd = clip.edit.end
   let gameLines = job.gameLines ?? []
@@ -675,8 +680,8 @@ async function render(job: RenderJob): Promise<RenderResult> {
         ? clip.focusTrack.map((kf) => ({ ...kf, t: map.toOutput(kf.t) }))
         : null
     }
-    if (transcript) {
-      captionTranscript = remapTranscript(transcript, map, start, clip.edit.end)
+    if (spokenTranscript) {
+      captionTranscript = remapTranscript(spokenTranscript, map, start, clip.edit.end)
       captionStart = 0
       captionEnd = outputDuration
     }

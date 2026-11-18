@@ -11,7 +11,7 @@ import {
 import { clipKeptSegments, TimeMap } from '@shared/tighten'
 import { automaticLayoutShots, clipAllowsAutoZoom, compositionHidesTitle, detailCaptionRanges, layoutBlocksAutoZoom } from '@shared/contentType'
 import { captionPositionAt } from '@shared/contentRegion'
-import { GAME_SUBTITLE_STYLE, HOOK_TITLE_SEC, visibleGameLines } from '@shared/gameDialogue'
+import { GAME_SUBTITLE_STYLE, HOOK_TITLE_SEC, visibleChatLines, visibleGameLines, withChatLines } from '@shared/gameDialogue'
 import { computeZoomEvents, fitZoomEvents } from '@shared/zoom'
 import { formatTimecode } from '../lib/format'
 import {
@@ -110,6 +110,11 @@ export default function PreviewPlayer({
   const { start, end } = clip.edit
   const duration = Math.max(0.1, end - start)
 
+  // A friend's party-chat lines caption alongside the creator's own words.
+  const spokenTranscript = useMemo(
+    () => withChatLines(project.transcript, visibleChatLines(clip, project.gameDialogue)),
+    [project.transcript, project.gameDialogue, clip]
+  )
   const aspectStyle = useMemo(() => {
     switch (clip.edit.aspect) {
       case '9:16':
@@ -324,9 +329,9 @@ export default function PreviewPlayer({
         <canvas ref={overviewRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden w-full" />
         <BrollOverlay clip={clip} time={time} />
         <WatermarkOverlay />
-        {clip.edit.captionsEnabled && project.transcript && (
+        {clip.edit.captionsEnabled && spokenTranscript && (
           <CaptionOverlay
-            transcript={project.transcript}
+            transcript={spokenTranscript}
             clip={clip}
             time={time}
             aspectRatio={aspectStyle}

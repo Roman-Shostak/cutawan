@@ -1,4 +1,4 @@
-import type { Clip, GameDialogue, GameDialogueLine, SpeechRegion, TranscriptWord } from './types'
+import type { Clip, GameDialogue, GameDialogueLine, SpeechRegion, Transcript, TranscriptWord } from './types'
 
 /**
  * Game-dialogue subtitles: speech from the game's own audio track, shown as a
@@ -112,9 +112,14 @@ export function wordsToGameLines(words: TranscriptWord[]): Array<{ start: number
   return lines
 }
 
-/** True when the clip burns game subtitles (on by default once the project has them). */
+/** True when a line is players talking (party chat), not the game. */
+export function isChatLine(line: Pick<GameDialogueLine, 'speaker'>): boolean {
+  return line.speaker === 'chat'
+}
+
+/** True when the clip burns game subtitles (on by default once the project has game lines). */
 export function gameSubtitlesEnabled(clip: Clip, dialogue: GameDialogue | null | undefined): boolean {
-  return !!dialogue?.lines.length && clip.edit.gameSubtitles !== false
+  return !!dialogue?.lines.some((line) => !isChatLine(line)) && clip.edit.gameSubtitles !== false
 }
 
 /** Game lines that overlap the clip's trim, whether hidden or not, in source order. */
@@ -130,9 +135,23 @@ export function gameLinesInClip(clip: Clip, dialogue: GameDialogue | null | unde
  */
 export function visibleGameLines(clip: Clip, dialogue: GameDialogue | null | undefined): Array<{ id: string; start: number; end: number; text: string }> {
   if (!gameSubtitlesEnabled(clip, dialogue)) return []
+  return shownLines(clip, dialogue, false)
+}
+
+/**
+ * The friend's party-chat lines to caption with the creator's own words:
+ * same rules as game lines (trim, hidden, text), but governed by the clip's
+ * caption switch rather than the game-subtitle one.
+ */
+export function visibleChatLines(clip: Clip, dialogue: GameDialogue | null | undefined): Array<{ id: string; start: number; end: number; text: string }> {
+  if (!clip.edit.captionsEnabled) return []
+  return shownLines(clip, dialogue, true)
+}
+
+function shownLines(clip: Clip, dialogue: GameDialogue | null | undefined, chat: boolean): Array<{ id: string; start: number; end: number; text: string }> {
   const hidden = new Set(clip.edit.hiddenGameLines ?? [])
   return gameLinesInClip(clip, dialogue)
-    .filter((line) => !hidden.has(line.id) && line.translation.trim().length > 0)
+    .filter((line) => isChatLine(line) === chat && !hidden.has(line.id) && line.translation.trim().length > 0)
     .map((line) => ({
       id: line.id,
       start: Math.max(line.start, clip.edit.start),
@@ -140,4 +159,40 @@ export function visibleGameLines(clip: Clip, dialogue: GameDialogue | null | und
       text: line.translation.trim()
     }))
     .filter((line) => line.end - line.start > 0.05)
+}
+
+/**
+ * Spread a chat line's text over its span as caption words, weighted by
+ * length so long words stay up longer. The text may be a translation, so
+ * the original word timings cannot be reused.
+ */
+export function chatLineWords(line: { start: number; end: number; text: string }): TranscriptWord[] {
+  const texts = line.text.split(/\s+/).filter(Boolean)
+  if (!texts.length) return []
+  const weights = texts.map((t) => t.length + 2)
+  const total = weights.reduce((a, b) => a + b, 0)
+  const span = Math.max(0.1, line.end - line.start)
+  let t = line.start
+  return texts.map((text, i) => {
+    const length = (span * weights[i]) / total
+    const word: TranscriptWord = { text, start: t, end: t + length * 0.92, speaker: 'chat' }
+    t += length
+    return word
+  })
+}
+
+/**
+ * The creator's transcript with the friend's chat lines merged in as extra
+ * words, so they caption in the same style and place. The original is not
+ * changed; cuts and analysis keep using the creator's words only.
+ */
+export function withChatLines(transcript: Transcript | null, lines: Array<{ start: number; end: number; text: string }>): Transcript | null {
+  if (!lines.length) return transcript
+  const base: Transcript = transcript ?? { language: '', durationSec: 0, segments: [] }
+  const nextId = base.segments.reduce((max, seg) => Math.max(max, seg.id), -1) + 1
+  const extra = lines
+    .map((line) => ({ line, words: chatLineWords(line) }))
+    .filter(({ words }) => words.length > 0)
+    .map(({ line, words }, i) => ({ id: nextId + i, text: line.text, start: line.start, end: line.end, words }))
+  return { ...base, segments: [...base.segments, ...extra].sort((a, b) => a.start - b.start) }
 }

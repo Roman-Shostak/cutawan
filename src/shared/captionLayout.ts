@@ -181,6 +181,9 @@ export function groupWords(words: TranscriptWord[], budget: CaptionLayoutBudget)
     if (
       count >= budget.maxWords ||
       (prev && w.start - prev.end > MAX_PAUSE_IN_GROUP_SEC) ||
+      // One speaker per caption: the creator and a friend in party chat
+      // never share a block, even when they talk over each other.
+      (prev && prev.speaker !== w.speaker) ||
       endsSentence ||
       (needsNewLine && !canStartLine)
     ) {

@@ -115,9 +115,14 @@ const TRANSLATION_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['id', 'translation'],
+        required: ['id', 'speaker', 'translation'],
         properties: {
           id: { type: 'string' },
+          speaker: {
+            type: 'string',
+            enum: ['game', 'chat'],
+            description: 'game = a character, narrator or other in-game voice; chat = the players themselves talking live (party/voice chat)'
+          },
           translation: { type: 'string', description: 'Subtitle text in the target language; empty when the line is not real speech' }
         }
       }
@@ -131,6 +136,7 @@ function systemPrompt(target: string, context: string): string {
     'Each input line is a short subtitle cut from speech recognition of the game audio. Lines may be fragments of one sentence: translate each so consecutive lines read naturally together, keeping each translation on its own line id.',
     'Keep character, place and item names consistent across the whole dialogue; keep established official names when the game has them. Preserve tone, humour, slang and swearing at the same strength. Keep it concise enough to read on screen.',
     `If a line is already in ${target}, return it cleaned up. If a line is clearly not dialogue (recognition noise, a stray sound, credits), return an empty translation for it.`,
+    'The audio is the game sound as the streamer hears it, so it can also contain the streamer\'s friends talking live in party chat. Mark each line with speaker: "game" for characters, narration and other in-game voices; "chat" for players chatting — casual talk about what is happening, jokes, reactions, plans, calling out enemies, usually in Ukrainian or Russian and not scripted. When unsure, choose "game". Translate chat lines too, keeping their casual tone.',
     'Return every input id exactly once.',
     context ? `Context from the creator about the game: ${context}` : ''
   ].filter(Boolean).join('\n')
@@ -153,15 +159,18 @@ async function translateLines(
       `Lines to translate (JSON):\n${JSON.stringify(batch.map((l) => ({ id: l.id, text: l.text })))}`
     ].filter(Boolean).join('\n\n')
     try {
-      const res = await chatJSON<{ lines?: Array<{ id: string; translation: string }> }>(
+      const res = await chatJSON<{ lines?: Array<{ id: string; translation: string; speaker?: string }> }>(
         options.apiKey, options.analysisModel,
         [{ role: 'system', content: systemPrompt(target, options.context.trim()) }, { role: 'user', content: user }],
         'game_dialogue_translation', TRANSLATION_SCHEMA as unknown as Record<string, unknown>, signal
       )
-      const byId = new Map((res.lines ?? []).map((l) => [l.id, typeof l.translation === 'string' ? l.translation.trim() : null]))
+      const byId = new Map((res.lines ?? []).map((l) => [l.id, l]))
       for (const line of batch) {
-        const translated = byId.get(line.id)
-        if (translated !== undefined && translated !== null) line.translation = translated
+        const result = byId.get(line.id)
+        if (!result) continue
+        if (typeof result.translation === 'string') line.translation = result.translation.trim()
+        // A creator's manual "game/friend" choice survives re-translation.
+        if (!line.speakerSetByUser) line.speaker = result.speaker === 'chat' ? 'chat' : 'game'
       }
     } catch (error) {
       if (signal?.aborted) throw error

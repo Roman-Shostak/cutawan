@@ -4,16 +4,21 @@ import {
   GAME_LINE_MAX_CHARS,
   gameLinesInClip,
   gameSubtitlesEnabled,
+  chatLineWords,
   isNoiseLine,
   speechCoverage,
+  visibleChatLines,
   visibleGameLines,
+  withChatLines,
   wordsToGameLines
 } from '@shared/gameDialogue'
+import { captionLayoutBudget, groupWords, wordsInRange } from '@shared/captionLayout'
+import { resolveCaptionStyle } from '@shared/captionStyles'
 import { buildAss } from '../src/main/pipeline/captions'
 import { makeTranscript } from './helpers'
 
 function clipWith(edit: Partial<Clip['edit']>): Clip {
-  return { id: 'c1', edit: { start: 10, end: 30, ...edit } } as unknown as Clip
+  return { id: 'c1', edit: { start: 10, end: 30, captionsEnabled: true, ...edit } } as unknown as Clip
 }
 
 const dialogue: GameDialogue = {
@@ -25,6 +30,7 @@ const dialogue: GameDialogue = {
     { id: 'b', start: 8, end: 12, text: 'Get down!', translation: 'Лягай!' },
     { id: 'c', start: 15, end: 17, text: 'Where is Ellie?', translation: 'Де Еллі?' },
     { id: 'd', start: 20, end: 22, text: '...', translation: '' },
+    { id: 'f', start: 24, end: 26, text: 'Брат, ти бачив?', translation: 'Брат, ти бачив?', speaker: 'chat' },
     { id: 'e', start: 29, end: 33, text: 'Run.', translation: 'Біжи.' }
   ]
 }
@@ -91,7 +97,7 @@ describe('clip game lines', () => {
   })
 
   it('lists lines overlapping the trim, hidden or not', () => {
-    expect(gameLinesInClip(clipWith({ hiddenGameLines: ['c'] }), dialogue).map((l) => l.id)).toEqual(['b', 'c', 'd', 'e'])
+    expect(gameLinesInClip(clipWith({ hiddenGameLines: ['c'] }), dialogue).map((l) => l.id)).toEqual(['b', 'c', 'd', 'f', 'e'])
   })
 
   it('shows only unhidden lines with text, clamped to the trim', () => {
@@ -99,6 +105,51 @@ describe('clip game lines', () => {
       { id: 'b', start: 10, end: 12, text: 'Лягай!' },
       { id: 'e', start: 29, end: 30, text: 'Біжи.' }
     ])
+  })
+})
+
+describe('friend chat lines', () => {
+  it('stay out of the game subtitles and follow the caption switch instead', () => {
+    expect(visibleGameLines(clipWith({}), dialogue).map((l) => l.id)).toEqual(['b', 'c', 'e'])
+    expect(visibleChatLines(clipWith({}), dialogue)).toEqual([{ id: 'f', start: 24, end: 26, text: 'Брат, ти бачив?' }])
+    expect(visibleChatLines(clipWith({ gameSubtitles: false }), dialogue)).toHaveLength(1)
+    expect(visibleChatLines(clipWith({ captionsEnabled: false }), dialogue)).toEqual([])
+    expect(visibleChatLines(clipWith({ hiddenGameLines: ['f'] }), dialogue)).toEqual([])
+  })
+
+  it('a project with only chat has no game subtitles to switch on', () => {
+    const chatOnly = { ...dialogue, lines: dialogue.lines.filter((l) => l.speaker === 'chat') }
+    expect(gameSubtitlesEnabled(clipWith({}), chatOnly)).toBe(false)
+  })
+
+  it('spread the text over the line, marked as chat', () => {
+    const words = chatLineWords({ start: 2, end: 4, text: 'Брат, ти бачив?' })
+    expect(words.map((w) => w.text)).toEqual(['Брат,', 'ти', 'бачив?'])
+    expect(words.every((w) => w.speaker === 'chat')).toBe(true)
+    expect(words[0].start).toBe(2)
+    expect(words[2].end).toBeLessThanOrEqual(4)
+    for (let i = 1; i < words.length; i++) expect(words[i].start).toBeGreaterThanOrEqual(words[i - 1].end)
+  })
+
+  it('merge into the creator captions without touching the original transcript', () => {
+    const transcript = makeTranscript(['ну ти бачив це'], { startSec: 0, wordSec: 0.4, gapSec: 0.1 })
+    const merged = withChatLines(transcript, [{ start: 3, end: 4.5, text: 'Та бачив, жесть!' }])!
+    expect(transcript.segments).toHaveLength(1)
+    expect(merged.segments).toHaveLength(2)
+    expect(merged.segments[1].id).toBe(1)
+    const words = wordsInRange(merged, 0, 10)
+    expect(words.map((w) => w.text)).toEqual(['ну', 'ти', 'бачив', 'це', 'Та', 'бачив,', 'жесть!'])
+    expect(withChatLines(transcript, [])).toBe(transcript)
+    expect(withChatLines(null, [{ start: 1, end: 2, text: 'Го!' }])?.segments).toHaveLength(1)
+  })
+
+  it('never share a caption block with the creator, even when talking over each other', () => {
+    const transcript = makeTranscript(['ну ти бачив це взагалі'], { startSec: 0, wordSec: 0.3, gapSec: 0.05 })
+    const merged = withChatLines(transcript, [{ start: 0.7, end: 1.2, text: 'Ага' }])!
+    const budget = captionLayoutBudget(resolveCaptionStyle('beast'), 9 / 16)
+    for (const group of groupWords(wordsInRange(merged, 0, 10), budget)) {
+      expect(new Set(group.words.map((w) => w.speaker ?? 'creator')).size).toBe(1)
+    }
   })
 })
 

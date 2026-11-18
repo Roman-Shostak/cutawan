@@ -131,7 +131,7 @@ async function runSmokeCapture(win: BrowserWindow, dir: string): Promise<void> {
   // Game dialogue: the seeded clip has three lines, one hidden by hand.
   await win.webContents.executeJavaScript(`document.querySelector('[data-testid="game-dialogue-editor"]')?.scrollIntoView({ block: 'center' })`)
   await sleep(500)
-  if (!(await win.webContents.executeJavaScript(`document.body.innerText.includes('Показано 2 з 3')`))) {
+  if (!(await win.webContents.executeJavaScript(`document.body.innerText.includes('Показано 3 з 4')`))) {
     throw new Error('Smoke capture: the editor does not list the clip\'s game dialogue')
   }
   await shot('editor-game-dialogue')

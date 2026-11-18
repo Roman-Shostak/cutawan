@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type {
+  GameLinePatch,
   AnalyzeOptions,
   AppSettings,
   CaptionVideoOptions,
@@ -151,8 +152,8 @@ interface AppState {
   /** Clips whose layout is being analysed in the background after the pipeline. */
   backgroundReframing: Record<string, boolean>
   updateTranscriptWord: (segmentId: number, wordIndex: number, text: string) => Promise<void>
-  /** Change the subtitle text of one game-dialogue line. */
-  updateGameLine: (lineId: string, translation: string) => Promise<void>
+  /** Change the text or the speaker (game / friend) of one game-dialogue line. */
+  updateGameLine: (lineId: string, patch: GameLinePatch) => Promise<void>
   /** Fill in the audio-track list for projects created before it was recorded. */
   probeAudioTracks: () => Promise<void>
   exportClip: (clipId: string) => Promise<void>
@@ -521,10 +522,10 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  updateGameLine: async (lineId, translation) => {
+  updateGameLine: async (lineId, patch) => {
     const project = get().project
     if (!project) return
-    const updated = await window.cutawan.updateGameLine(project.id, lineId, translation)
+    const updated = await window.cutawan.updateGameLine(project.id, lineId, patch)
     const current = get().project
     if (current?.id === updated.id) {
       set({ project: { ...current, gameDialogue: updated.gameDialogue } })

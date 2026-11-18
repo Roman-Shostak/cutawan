@@ -12,7 +12,7 @@ import { join } from 'node:path'
 import assert from 'node:assert/strict'
 import { extractAudioChunks, FFMPEG_PATH, probeVideo, runBinaryFull, runFfmpeg } from '../src/main/pipeline/ffmpeg'
 import { renderClip } from '../src/main/pipeline/render'
-import { visibleGameLines } from '../src/shared/gameDialogue'
+import { visibleChatLines, visibleGameLines } from '../src/shared/gameDialogue'
 import type { Clip, GameDialogue, Transcript } from '../src/shared/types'
 
 const WORK = join(process.cwd(), '.tmp', 'gamedialogue-test')
@@ -62,7 +62,8 @@ async function main(): Promise<void> {
     lines: [
       { id: 'g1', start: 1.5, end: 4.5, text: 'Joel, get down! They are right behind us!', translation: 'Джоеле, лягай! Вони прямо за нами!' },
       { id: 'g2', start: 6, end: 8.5, text: 'Где патроны? У меня пусто.', translation: 'Де набої? У мене порожньо.' },
-      { id: 'g3', start: 12, end: 14, text: 'Shh.', translation: 'Тихо.' }
+      { id: 'g3', start: 12, end: 14, text: 'Shh.', translation: 'Тихо.' },
+      { id: 'g4', start: 9, end: 11, text: 'Брат, ти це бачив?', translation: 'Брат, ти це бачив?', speaker: 'chat' }
     ]
   }
   const baseEdit = {
@@ -84,14 +85,15 @@ async function main(): Promise<void> {
   for (const [name, edit] of cases) {
     const clip = makeClip(edit)
     const gameLines = visibleGameLines(clip, dialogue)
+    const chatLines = visibleChatLines(clip, dialogue)
     const out = join(WORK, `render-${name}.mp4`)
-    await renderClip({ clip, source: info, transcript, gameLines, outputPath: out })
+    await renderClip({ clip, source: info, transcript, gameLines, chatLines, outputPath: out })
     const rendered = await probeVideo(out)
     assert.equal(rendered.height, 1920)
-    for (const t of [2, 6]) {
+    for (const t of [2, 6, 9.6]) {
       await runFfmpeg(['-y', '-ss', String(t), '-i', out, '-frames:v', '1', '-vf', 'scale=540:-1', join(WORK, `${name}-t${t}.png`)])
     }
-    console.log(`✓ render ${name}: ${gameLines.length} game lines, ${rendered.durationSec.toFixed(1)}s`)
+    console.log(`✓ render ${name}: ${gameLines.length} game, ${chatLines.length} chat lines, ${rendered.durationSec.toFixed(1)}s`)
   }
   console.log('Frames in', WORK)
 }

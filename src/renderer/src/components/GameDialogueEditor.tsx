@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Gamepad2, Users } from 'lucide-react'
 import type { Clip, GameDialogueLine, Project } from '@shared/types'
-import { gameLinesInClip, gameSubtitlesEnabled } from '@shared/gameDialogue'
+import { gameLinesInClip, isChatLine } from '@shared/gameDialogue'
 import { usePreviewBus } from '../lib/previewBus'
 import { useStore } from '../store'
 import { formatTimecode } from '../lib/format'
 
 /**
- * Per-clip control over the translated game dialogue: switch it off for the
- * whole clip, or hide single lines (the game talking over a funny moment
- * with a friend). Hiding is per clip; editing a translation fixes the line
- * everywhere it appears.
+ * Per-clip control over the game track's lines: switch the game subtitles
+ * off for the whole clip, hide single lines (the game talking over a funny
+ * moment), and say who is talking — a game character (top subtitles) or a
+ * friend in party chat (captioned at the bottom with the creator's words).
+ * Hiding is per clip; text and speaker fixes apply everywhere.
  */
 export default function GameDialogueEditor({
   project,
@@ -23,9 +24,11 @@ export default function GameDialogueEditor({
 }): React.JSX.Element {
   const dialogue = project.gameDialogue
   const lines = gameLinesInClip(clip, dialogue)
-  const enabled = gameSubtitlesEnabled(clip, dialogue)
+  const gameOn = clip.edit.gameSubtitles !== false
+  const chatOn = clip.edit.captionsEnabled
   const hidden = new Set(clip.edit.hiddenGameLines ?? [])
-  const shown = lines.filter((l) => !hidden.has(l.id) && l.translation.trim()).length
+  const shown = lines.filter((l) => !hidden.has(l.id) && l.translation.trim() &&
+    (isChatLine(l) ? chatOn : gameOn)).length
 
   const setHidden = (next: Set<string>): void => {
     // Keep ids of lines outside the current trim too: widening the trim later
@@ -44,13 +47,13 @@ export default function GameDialogueEditor({
   return (
     <div data-testid="game-dialogue-editor">
       <ToggleRow
-        label="Показувати діалоги гри"
+        label="Показувати субтитри гри (вгорі)"
         checked={clip.edit.gameSubtitles !== false}
         onChange={(v) => onEdit({ gameSubtitles: v })}
       />
       {lines.length === 0 ? (
         <p className="mt-2 text-[11px] text-zinc-500">У межах цього кліпу гра нічого не говорить.</p>
-      ) : enabled && (
+      ) : (
         <>
           <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
             <span>Показано {shown} з {lines.length}</span>
@@ -74,6 +77,7 @@ export default function GameDialogueEditor({
                 key={`${line.id}:${line.translation}`}
                 line={line}
                 hidden={hidden.has(line.id)}
+                layerOff={isChatLine(line) ? !chatOn : !gameOn}
                 onToggle={() => {
                   const next = new Set(hidden)
                   if (next.has(line.id)) next.delete(line.id)
@@ -84,7 +88,10 @@ export default function GameDialogueEditor({
             ))}
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-            Натисніть на час, щоб перейти до репліки. Виправлений переклад зберігається для всіх кліпів.
+            <Gamepad2 size={11} className="inline" /> — гра, субтитри вгорі; <Users size={11} className="inline" /> — друг у чаті,
+            субтитри внизу разом із вашими. Натисніть на значок, щоб змінити. Час переносить до репліки;
+            виправлений текст і вибір мовця зберігаються для всіх кліпів.
+            {!chatOn && ' Субтитри вимкнено, тож репліки друга зараз не показуються.'}
           </p>
         </>
       )}
@@ -92,11 +99,14 @@ export default function GameDialogueEditor({
   )
 }
 
-function LineRow({ line, hidden, onToggle }: {
+function LineRow({ line, hidden, layerOff, onToggle }: {
   line: GameDialogueLine
   hidden: boolean
+  /** The line's layer (game subtitles or captions) is off for this clip. */
+  layerOff: boolean
   onToggle: () => void
 }): React.JSX.Element {
+  const chat = isChatLine(line)
   const seek = usePreviewBus((s) => s.seek)
   const active = usePreviewBus((s) => s.time >= line.start && s.time < line.end)
   const updateGameLine = useStore((s) => s.updateGameLine)
@@ -106,7 +116,8 @@ function LineRow({ line, hidden, onToggle }: {
     <div
       className={`rounded-lg border px-2.5 py-2 transition ${
         active ? 'border-white/30 bg-white/[0.05]' : 'border-surface-600'
-      } ${hidden ? 'opacity-45' : ''}`}
+      } ${hidden || layerOff ? 'opacity-45' : ''}`}
+      data-testid="game-line"
     >
       <div className="flex items-center gap-2">
         <button
@@ -114,6 +125,17 @@ function LineRow({ line, hidden, onToggle }: {
           className="font-mono text-[10px] text-zinc-500 hover:text-zinc-200"
         >
           {formatTimecode(line.start)}
+        </button>
+        <button
+          onClick={() => void updateGameLine(line.id, { speaker: chat ? 'game' : 'chat' })}
+          className={`flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition ${
+            chat ? 'bg-sky-500/15 text-sky-300 hover:bg-sky-500/25' : 'bg-surface-700 text-zinc-300 hover:bg-surface-600'
+          }`}
+          title={chat ? 'Це друг у чаті — субтитри внизу. Натисніть, якщо це гра' : 'Це гра — субтитри вгорі. Натисніть, якщо це друг у чаті'}
+          data-testid="game-line-speaker"
+        >
+          {chat ? <Users size={11} /> : <Gamepad2 size={11} />}
+          {chat ? 'Друг' : 'Гра'}
         </button>
         {line.text !== line.translation && (
           <span className="min-w-0 flex-1 truncate text-[10px] text-zinc-600" title={line.text}>{line.text}</span>
@@ -131,7 +153,7 @@ function LineRow({ line, hidden, onToggle }: {
         value={draft}
         rows={Math.min(3, Math.max(1, Math.ceil(draft.length / 38)))}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => { if (draft.trim() !== line.translation) void updateGameLine(line.id, draft) }}
+        onBlur={() => { if (draft.trim() !== line.translation) void updateGameLine(line.id, { translation: draft }) }}
         className={`mt-1 w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xs text-zinc-200 focus:border-surface-600 focus:bg-surface-850 focus:outline-none ${
           hidden ? 'line-through' : ''
         }`}

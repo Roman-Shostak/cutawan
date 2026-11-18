@@ -51,6 +51,20 @@ export interface GameDialogueLine {
   translation: string
   /** Language Whisper detected for this part of the game track. */
   language?: string
+  /**
+   * Who is talking: a game character, or players chatting live (party chat
+   * comes through the same Remote Play audio). Chat goes with the creator's
+   * captions instead of the game subtitles. Absent means game.
+   */
+  speaker?: 'game' | 'chat'
+  /** The creator picked `speaker` by hand; re-translation keeps it. */
+  speakerSetByUser?: boolean
+}
+
+/** What the editor may change on one game-dialogue line. */
+export interface GameLinePatch {
+  translation?: string
+  speaker?: 'game' | 'chat'
 }
 
 export interface GameDialogue {
@@ -69,6 +83,8 @@ export interface TranscriptWord {
   sourceText?: string
   start: number
   end: number
+  /** Set on words from the game track's player chat (a friend in party chat); absent for the creator's own words. */
+  speaker?: 'chat'
 }
 
 export interface TranscriptSegment {
