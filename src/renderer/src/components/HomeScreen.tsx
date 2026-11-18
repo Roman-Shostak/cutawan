@@ -300,8 +300,11 @@ function SetupPanel(): React.JSX.Element {
   const last = settings?.lastAnalyze ?? null
   const hasClips = project.clips.length > 0
   const [clipLength, setClipLength] = useState<ClipLengthPreference>(last?.clipLength ?? 'auto')
+  // "auto" is what older imports were saved with, not a choice: this fork
+  // is for game streams, so those start as one.
+  const savedType = project.videoType && project.videoType !== 'auto' ? project.videoType : undefined
   const [videoType, setVideoType] = useState<VideoType>(
-    (hasClips ? project.videoType : last?.videoType) ?? project.videoType ?? 'gaming-stream')
+    (hasClips ? savedType : undefined) ?? last?.videoType ?? savedType ?? 'gaming-stream')
   // Image inserts are hidden in this fork: they do not suit gameplay.
   const broll = false
   const [streamTemplate, setStreamTemplate] = useState<StreamTemplate>(

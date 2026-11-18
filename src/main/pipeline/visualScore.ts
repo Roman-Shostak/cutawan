@@ -210,7 +210,9 @@ export async function assessClipVisuals(
   videoPath: string,
   transcript: Transcript,
   clip: Clip,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  /** Extra judging guidance for this kind of video (game streams). */
+  focus?: string
 ): Promise<VisualScoreResult | null> {
   let framePaths: string[] = []
   try {
@@ -231,7 +233,7 @@ export async function assessClipVisuals(
       apiKey,
       model,
       [
-        { role: 'system', content: `${SYSTEM_PROMPT}\n\n${creatorTextInstruction(transcript.language, 'reason, layout_reason and visual_summary')}` },
+        { role: 'system', content: `${SYSTEM_PROMPT}${focus ? `\n\n${focus}` : ''}\n\n${creatorTextInstruction(transcript.language, 'reason, layout_reason and visual_summary')}` },
         { role: 'user', content: parts }
       ],
       'visual_assessment',

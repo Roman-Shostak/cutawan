@@ -192,6 +192,7 @@ export async function analyzeProject(
     await applyGameDialogue(project, workDir, routing, options.gameContext ?? '', apiKey,
       { from: 0.46, to: 0.58 }, onProgress, signal)
 
+    const gameStream = options.videoType === 'gaming-stream'
     // The visual and editorial passes judge against the creator's focus; for
     // game streams that focus includes what makes a stream clip.
     const focusPrompt = options.videoType === 'gaming-stream'
@@ -260,14 +261,16 @@ export async function analyzeProject(
         project.video.path,
         transcript,
         clip,
-        signal
+        signal,
+        gameStream ? GAME_STREAM_GUIDANCE : undefined
       )
       if (visual?.needsVisualPayoff) {
         const repaired = await completeVisualStory(apiKey, settings.analysisModel, project.video.path,
           transcript, clip, project.video.durationSec, maxDurationFor(options.clipLength), signal)
         if (repaired) {
           Object.assign(clip, repaired)
-          visual = await assessClipVisuals(apiKey, settings.analysisModel, project.video.path, transcript, clip, signal)
+          visual = await assessClipVisuals(apiKey, settings.analysisModel, project.video.path, transcript, clip, signal,
+            gameStream ? GAME_STREAM_GUIDANCE : undefined)
         }
         // A known incomplete demonstration needs a verified repair before recommendation.
         if (!repaired || !visual || visual.needsVisualPayoff) incomplete.add(clip.id)
@@ -285,7 +288,16 @@ export async function analyzeProject(
         message: 'Оцінюю візуал…'
       })
     }), { clips: clips.length })
-    // The creator's own marked moments stay whatever the review thinks.
+    // The creator's own marked moments stay whatever the review thinks. In a
+    // game stream a reaction or a fail is the payoff and needs no story, so
+    // the review's story verdict only lowers the score there.
+    if (gameStream) {
+      for (const clip of clips) {
+        if (incomplete.has(clip.id) || incoherent.has(clip.id)) clip.viralityScore = Math.max(0, clip.viralityScore - 10)
+      }
+      incomplete.clear()
+      incoherent.clear()
+    }
     clips = clips.filter(clip => clip.streamMarker !== undefined || !incomplete.has(clip.id))
     if (!clips.length) throw new Error('Кліпи обіцяли демонстрації, розв’язку яких не вдалося вмістити. Спробуйте довшу довжину кліпу.')
     clips = clips.filter(clip => clip.streamMarker !== undefined || !incoherent.has(clip.id))
