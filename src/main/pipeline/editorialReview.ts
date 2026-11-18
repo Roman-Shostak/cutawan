@@ -87,7 +87,7 @@ export function editorialInput(clip: Clip, transcript: Transcript): EditorialInp
 
 /** Strict validation applies even to providers that ignore the JSON schema. */
 export function validateEditorialReview(value: unknown, input: EditorialInput, transcript: Transcript, hasAudience: boolean): EditorialAssessment {
-  const failed = () => needsEditorialReview(input.clip, transcript, 'The editorial review returned incomplete or unsupported evidence.')
+  const failed = () => needsEditorialReview(input.clip, transcript, 'Редакторська перевірка повернула неповні або непідтверджені докази.')
   if (!object(value) || value.id !== input.clip.id || !['complete', 'incomplete', 'uncertain'].includes(String(value.story)) ||
     !['supported', 'misleading', 'uncertain'].includes(String(value.fidelity)) || !object(value.scores) ||
     !text(value.reason, 400) || !text(value.takeaway, 300) || !Array.isArray(value.concerns) || value.concerns.length > 4 ||
@@ -132,7 +132,7 @@ export function validateEditorialReview(value: unknown, input: EditorialInput, t
     fidelity: unsupportedRejection ? 'uncertain' : value.fidelity as EditorialAssessment['fidelity'],
     scores, score: uncertain || rejected ? null : editorialScore(scores), reason: value.reason.trim(),
     concerns: [...value.concerns as string[], ...(input.truncated ? ['The supplied speech/context was truncated; check the full source.'] : []),
-      ...(unsupportedRejection ? ['The proposed rejection was not sufficiently grounded; review the source.'] : [])],
+      ...(unsupportedRejection ? ['Відхилення не було достатньо обґрунтоване; перегляньте фрагмент.'] : [])],
     takeaway: value.takeaway.trim(), evidence, selectionKey: editorialSelectionKey(input.clip, transcript),
     start: input.clip.edit.start, end: input.clip.edit.end }
 }
@@ -177,7 +177,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
       'Evidence times are requested seeks; actual frames can be up to one second earlier.',
       'The baseline compares the same surviving candidate pool. It does not evaluate moments missed during discovery.']
   }
-  const evaluated = candidates.map(c => ({ ...c, editorial: needsEditorialReview(c, opts.transcript, 'The candidate was outside the bounded editorial review budget.') }))
+  const evaluated = candidates.map(c => ({ ...c, editorial: needsEditorialReview(c, opts.transcript, 'Кліп не ввійшов у ліміт редакторської перевірки.') }))
   for (let offset = 0; offset < Math.min(evaluated.length, BUDGET.maxCandidates); offset += batchSize) {
     opts.signal?.throwIfAborted()
     opts.onProgress?.(`Перевіряю історії кліпів (${offset + 1}–${Math.min(offset + batchSize, evaluated.length)}/${evaluated.length})…`)
@@ -204,7 +204,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
           inputs.push(input); parts.push(...clipParts)
         } catch (error) {
           rethrowBlocked(error, opts.signal)
-          clip.editorial = needsEditorialReview(clip, opts.transcript, 'The selected footage could not be sampled for editorial review.')
+          clip.editorial = needsEditorialReview(clip, opts.transcript, 'Не вдалося взяти кадри цього фрагмента для перевірки.')
         }
       }
       if (!inputs.length) continue
@@ -218,11 +218,11 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
       for (const input of inputs) {
         input.clip.editorial = validEnvelope
           ? validateEditorialReview((response as { reviews: Record<string, unknown>[] }).reviews.find(v => v.id === input.clip.id), input, opts.transcript, !!opts.prompt.trim())
-          : needsEditorialReview(input.clip, opts.transcript, 'The editorial review returned missing, duplicate or unexpected candidate IDs.')
+          : needsEditorialReview(input.clip, opts.transcript, 'Редакторська перевірка повернула неповну або плутану відповідь.')
       }
     } catch (error) {
       rethrowBlocked(error, opts.signal)
-      for (const input of inputs) input.clip.editorial = needsEditorialReview(input.clip, opts.transcript, 'The editorial review failed. Check this selection before publishing.')
+      for (const input of inputs) input.clip.editorial = needsEditorialReview(input.clip, opts.transcript, 'Редакторська перевірка не вдалася. Перегляньте кліп перед публікацією.')
     } finally { await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true }).catch(() => undefined))) }
   }
 
@@ -243,7 +243,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
     } catch (error) {
       rethrowBlocked(error, opts.signal)
       report.diversityStatus = 'failed'
-      report.limitations.push('Repeated-idea review failed; results retain score order after overlap removal.')
+      report.limitations.push('Перевірка повторів не вдалася; кліпи впорядковано за оцінкою.')
     }
   }
   const selected = selectEditorialClips(evaluated, repeated, opts.transcript)
@@ -256,7 +256,7 @@ export async function rankEditorialCandidates(opts: RankOptions): Promise<{ clip
   report.rankedSnapshot = structuredClone(selected.clips)
   const after = await stat(opts.video.path)
   if (before.size !== after.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs || before.ino !== after.ino) {
-    throw new Error('The source changed during editorial review. Generate clips again for the current video.')
+    throw new Error('Відео змінилося під час перевірки. Згенеруйте кліпи заново.')
   }
   opts.signal?.throwIfAborted()
   return { clips: selected.clips, report }

@@ -193,6 +193,6 @@ describe('bounded independent ranking', () => {
   it('refuses a snapshot if the source was changed during review', async () => {
     const original = mocks.chat.getMockImplementation()!
     mocks.chat.mockImplementation(async (...args) => { await writeFile(source, `${await readFile(source, 'utf8')}changed`); return original(...args) })
-    await expect(rankEditorialCandidates(options())).rejects.toThrow('source changed')
+    await expect(rankEditorialCandidates(options())).rejects.toThrow('Відео змінилося')
   })
 })
